@@ -26,8 +26,8 @@ vnames = [{'YEAR'},{'DOY'},{'LAT'},{'LON'},{'P_ERA'},{'TA_ERA'},{'PA_ERA'},{'SW_
 % ann training parameters
 trainParms.verbose       = 0;
 trainParms.nodes         = 10;
-trainParms.trainRatio    = 0.75;
-trainParms.max_fail      = 50;
+trainParms.trainRatio    = 0.65;
+trainParms.max_fail      = 10;
 trainParms.epochs        = 1e3;
 trainParms.trainFcn      = 'trainscg';
 trainParms.performFcn    = 'mse';
@@ -131,9 +131,16 @@ for s = 1:Ns
     
 end
 
-%% --- Plot Statistics ----------------------------------------------------
+%% --- Global Statistics --------------------------------------------------
 
+Y = squeeze(allData(:,Ydex,:)); Y = Y(:);
+Z = Ztst(:);
 
+mdex = find(any(isnan([Y,Z]')));
+Y(mdex) = [];
+Z(mdex) = [];
+
+allStats = calcStats(Y,Z,Bw);
 
 %% *** END SCRIPT *********************************************************
 

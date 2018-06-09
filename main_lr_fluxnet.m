@@ -91,8 +91,4 @@ plot(rsquared)
 figure(2)
 plot(keepCoefs,'*')
 
-for c = 1:length(vnames)
-    cc = corrcoef(keepCoefs(c,1:100),rsquared); colcor(c) = cc(2);
-end
-
 
