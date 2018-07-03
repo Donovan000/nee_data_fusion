@@ -12,6 +12,9 @@ Im = find(isnan(M)); O(Im) = []; M(Im) = [];
 
 if length(O) > 0.5*Nbefore
     
+    % number of data points
+    stats.ndata = length(O);
+    
     % root mean squared error
     stats.rmse = sqrt(nanmean((O-M).^2));
     stats.nse = 1-sqrt(nanmean((O-M).^2))/sqrt(nanmean((O-nanmean(O)).^2));
