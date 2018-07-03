@@ -13,7 +13,8 @@ Im = find(isnan(M)); O(Im) = []; M(Im) = [];
 if length(O) > 0.5*Nbefore
     
     % root mean squared error
-    stats.rmse = sqrt(nanmean((M-O).^2));
+    stats.rmse = sqrt(nanmean((O-M).^2));
+    stats.nse = 1-sqrt(nanmean((O-M).^2))/sqrt(nanmean((O-nanmean(O)).^2));
     
     % mean biased error
     stats.mbe = sqrt(nanmean(abs(M-O)));
