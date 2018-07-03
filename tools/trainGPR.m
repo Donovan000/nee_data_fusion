@@ -1,4 +1,4 @@
-function [trainedModel,Yhat] = trainGPR(X,Y,parms,varargin)
+function [trainedModel,Yhat] = trainGPR(X,Y,varargin)
 
 % predictors and responses
 [Nx,~ ] = size(X);
@@ -13,10 +13,10 @@ assert(Nx == Ny);
 if nargin > 2
     parms = varargin{1};
     if ~isfield(parms,'kernel'); parms.kernel = 'rationalquadratic'; end
-    if ~isfield(parms,'standardize'); parms.standardize = 'true'; end
+    if ~isfield(parms,'standardize'); parms.standardize = true; end
 else
     parms.kernel = 'rationalquadratic'; 
-    parms.standardize = 'true'; 
+    parms.standardize = true; 
 end
 
 % --- Train ---------------------------------------------------------------
