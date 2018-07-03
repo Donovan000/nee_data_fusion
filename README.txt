@@ -1,6 +1,6 @@
 Step 1 - Extract and prepare data:
 a) Run <extract_fluxnet.m> to read directly from the FluxNet daily csv files.
-b) Run <collocate_data_types.m> to pull in RSIF data.
+b) Run <extract_sirf.m> to pull in RSIF data.
 c) Run <biweekly_averaging.m> to convert from daily to twice-monthly values, so that all rows have an RSIF value.
 
 Step 2 - Perform linear sensitivity analysis:
