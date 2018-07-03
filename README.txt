@@ -1,3 +1,8 @@
+
+Step 1: Run <extract_fluxnet.m> to read directly from the FluxNet daily csv files.
+Step 2: Run <main_fluxnet_daily_regressions.m> to test ANN, GPR, TreeBagger models on daily fluxnet data. This script will assess sensitivity to various input columns, and will conduct (i) site-specific k-fold validation and (ii) leave-one-out cross-site validation. 
+
+--- outdated --------------------------------------------------------------------
 Step 1 - Extract and prepare data:
 a) Run <extract_fluxnet.m> to read directly from the FluxNet daily csv files.
 b) Run <extract_sirf.m> to pull in RSIF data.
