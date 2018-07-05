@@ -155,7 +155,7 @@ fprintf(repmat('-',[1,60]));
 fprintf('\n\n');
 
 % loop through inputs
-for i = 1:1%Nips
+for i = 1:Nips
     
     % sepatate training/test data
     ii = inps(i,~isnan(inps(i,:)));
@@ -169,12 +169,14 @@ for i = 1:1%Nips
     fprintf('. finished; time = %f \n',toc);
     
     % k-fold validation for gpr
-    fprintf('Training/Testing GPR - inputs: %d/%d ...',i,Nips); tic;
-    for k = 1:kfold
-        gpr = trainGPR(Xall(Itrn(:,k),ii),Yall(Itrn(:,k),:),GPRtrainParms);
-        Zsens_gpr(Itst(:,k),i) = predict(gpr.RegressionGP,Xall(Itst(:,k),ii));
-    end % k-fold
-    fprintf('. finished; time = %f \n',toc);
+    if i == 1
+        fprintf('Training/Testing GPR - inputs: %d/%d ...',i,Nips); tic;
+        for k = 1:kfold
+            gpr = trainGPR(Xall(Itrn(:,k),ii),Yall(Itrn(:,k),:),GPRtrainParms);
+            Zsens_gpr(Itst(:,k),i) = predict(gpr.RegressionGP,Xall(Itst(:,k),ii));
+        end % k-fold
+        fprintf('. finished; time = %f \n',toc);
+    end
     
     % k-fold validation for bagger
     fprintf('Training/Testing TBG - inputs: %d/%d ...',i,Nips); tic;
@@ -358,13 +360,13 @@ for s = 1:Ns
     % loo gpr
     fprintf('Training/Testing GPR - loo: %d/%d ...',s,Ns); tic;
         gpr = trainGPR(Xtrn,Ytrn,GPRtrainParms);
-        Zloo_gpr(1:size(Ytst,1),s) = predict(gpr.RegressionGP,Xtst');
+        Zloo_gpr(1:size(Ytst,1),s) = predict(gpr.RegressionGP,Xtst);
     fprintf('. finished; time = %f \n',toc);
 
     % loo bagger
     fprintf('Training/Testing TBG - loo: %d/%d ...',s,Ns); tic;
         tbg = trainTBG(Xtrn,Ytrn,TBGtrainParms);
-        Zloo_tbg(1:size(Ytst,1),s) = predict(tbg.RegressionEnsemble,Xtst');
+        Zloo_tbg(1:size(Ytst,1),s) = predict(tbg.RegressionEnsemble,Xtst);
     fprintf('. finished; time = %f \n',toc);
 
     % gather the observation data
