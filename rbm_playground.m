@@ -99,10 +99,6 @@ Bmax = max(Ydata(:))+1e-6;
 By = linspace(Bmin,Bmax,Nbins);
 Bw = By(2) - By(1);
 
-% save input/target data
-save('./data/Xdata.mat','Xdata');
-save('./data/Ydata.mat','Ydata');
-
 %% --- Sensitivity Models -------------------------------------------------
 
 % number of sensitivity groups
@@ -113,10 +109,6 @@ inps(end,:) = [];
 % extract all X,Y data
 Xall = reshape(permute(Xdata,[1,3,2]),[Nt*Ns,Nx]);
 Yall = reshape(permute(Ydata,[1,3,2]),[Nt*Ns,Ny]);
-
-% save input/target data
-save('./data/Xall.mat','Xall');
-save('./data/Yall.mat','Yall');
 
 % % remove missing columns from all X,Y data
 % Xall(:,all(isnan(Xall))) = []; 
@@ -210,9 +202,6 @@ end % i-loop
 
 % calculate averaged-difference sensitivities
 sens_vals = difference_sensitivities(inps,stats.sens);
-
-% save progress
-save
 
 %% --- Site-Specific Models -----------------------------------------------
 
@@ -313,9 +302,6 @@ for s = 1:Ns
     
 end % s-loop
 
-% save progress
-save
-
 %% --- LOO Models ---------------------------------------------------------
 
 % init storage
@@ -403,9 +389,6 @@ for s = 1:Ns
     
 end % s-loop
 
-% save progress
-save
-
 %% --- Global Statistics --------------------------------------------------
 
 % site-regression global stats
@@ -451,9 +434,6 @@ mdex = find(any(isnan([Zobs,Ztbg]'))); Zobs(mdex) = []; Ztbg(mdex) = [];
 stats.global.loo.tbg = calcStats(Zobs,Ztbg,Bw);
 
 %% --- Save Results -------------------------------------------------------
-
-% save progress
-save
 
 fname = 'fluxnet_daily_regressions.mat';
 save(fname);
