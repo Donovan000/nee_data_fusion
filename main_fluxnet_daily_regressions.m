@@ -99,9 +99,9 @@ Bmax = max(Ydata(:))+1e-6;
 By = linspace(Bmin,Bmax,Nbins);
 Bw = By(2) - By(1);
 
-% save input/target data
-save('./data/Xdata.mat','Xdata');
-save('./data/Ydata.mat','Ydata');
+% % save input/target data
+% save('./data/Xdata.mat','Xdata');
+% save('./data/Ydata.mat','Ydata');
 
 %% --- Sensitivity Models -------------------------------------------------
 
@@ -117,25 +117,6 @@ Yall = reshape(permute(Ydata,[1,3,2]),[Nt*Ns,Ny]);
 % save input/target data
 save('./data/Xall.mat','Xall');
 save('./data/Yall.mat','Yall');
-
-% % remove missing columns from all X,Y data
-% Xall(:,all(isnan(Xall))) = []; 
-% 
-% % remove missing rows from all X,Y data
-% mdex = find(any(isnan([Xall,Yall]')));
-% Xall(mdex,:) = []; Yall(mdex,:) = [];
-% assert(isempty(find(isnan(Xall(:)),1)));
-% assert(isempty(find(isnan(Yall(:)),1)));
-% 
-% % check removal of missing values
-% assert(~any(isnan(Xall(:))));
-% assert(~any(isnan(Yall(:))));
-% 
-% % number of data
-% Na = size(Xall,1);
-% remove = rem(Na,kfold);
-% Xall(end-remove+1:end,:) = [];
-% Yall(end-remove+1:end,:) = [];
 
 % k-fold partitioning
 Na = size(Xall,1);
@@ -212,7 +193,7 @@ end % i-loop
 sens_vals = difference_sensitivities(inps,stats.sens);
 
 % save progress
-save
+save('./results/sensitivity_results.mat');
 
 %% --- Site-Specific Models -----------------------------------------------
 
@@ -233,29 +214,6 @@ for s = 1:Ns
     % sepatate training/test data
     Xsite = Xdata(:,:,s);
     Ysite = Ydata(:,:,s);
-    
-%     % remove missing columns from input data
-%     Xsite(:,all(isnan(Xsite))) = [];
-%     
-%     % remove missing rows from training data
-%     mdex = find(any(isnan([Xsite,Ysite]')));
-%     Xsite(mdex,:) = []; Ysite(mdex,:) = [];
-%     assert(isempty(find(isnan(Xsite(:)),1)));
-%     assert(isempty(find(isnan(Ysite(:)),1)));
-%     
-%     % check removal of missing values
-%     assert(~any(isnan(Xsite(:))));
-%     assert(~any(isnan(Ysite(:))));
-%         
-%     % number of data points at this site
-%     Nts = size(Xsite,1);
-%     remove = rem(Nts,kfold);
-%     Xsite(end-remove+1:end,:) = [];
-%     Ysite(end-remove+1:end,:) = [];
-%     assert(size(Ysite,1) == Nts);
-%     
-%     % don't bother if not enough data
-%     if Nts < 10*kfold; continue; end
 
     % k-fold partitioning
     Nts = size(Xsite,1);
@@ -314,7 +272,7 @@ for s = 1:Ns
 end % s-loop
 
 % save progress
-save
+save('./results/site_by_site_results.mat');
 
 %% --- LOO Models ---------------------------------------------------------
 
@@ -336,39 +294,17 @@ for s = 1:Ns
     Sdex = 1:Ns;
     Sdex(s) = [];
     
+    % select random training points at each site
+    idex = randperm(1:Nmax,round(Nmax/2));
+    Nti = length(idex);
+    
     % extract training data
-    Xtrn = reshape(permute(Xdata(:,:,Sdex),[1,3,2]),[Nt*(Ns-1),Nx]);
-    Ytrn = reshape(permute(Ydata(:,:,Sdex),[1,3,2]),[Nt*(Ns-1),Ny]);
+    Xtrn = reshape(permute(Xdata(idex,:,Sdex),[1,3,2]),[Nti*(Ns-1),Nx]);
+    Ytrn = reshape(permute(Ydata(idex,:,Sdex),[1,3,2]),[Nti*(Ns-1),Ny]);
     
     % extract test data
     Xtst = squeeze(Xdata(:,:,s));
     Ytst = squeeze(Ydata(:,:,s));
-
-%     % remove missing columns from input data
-%     mdex = find(all(isnan(Xtst)));
-%     Xtst(:,mdex) = []; Xtrn(:,mdex) = [];
-%     
-%     % remove missing rows from training data
-%     mdex = find(any(isnan([Xtrn,Ytrn]')));
-%     Xtrn(mdex,:) = []; Ytrn(mdex,:) = [];
-%     assert(isempty(find(isnan(Xtrn(:)),1)));
-%     assert(isempty(find(isnan(Ytrn(:)),1)));
-%     
-%     % remove missing rows from test data
-%     mdex = find(any(isnan([Xtst,Ytst]')));
-%     Xtst(mdex,:) = []; Ytst(mdex,:) = [];
-%     assert(isempty(find(isnan(Xtst(:)),1)));
-%     assert(isempty(find(isnan(Ytst(:)),1)));
-% 
-%     % check removal of missing values
-%     assert(~any(isnan(Xtrn(:))));
-%     assert(~any(isnan(Ytrn(:))));
-%     assert(~any(isnan(Xtst(:))));
-%     assert(~any(isnan(Ytst(:))));
-% 
-%     % don't bother if not enough data
-%     if length(Ytst) < kfold*10; continue; end
-%     if length(Ytrn) < kfold*10; continue; end
 
     % loo ann
     fprintf('Training/Testing ANN - loo: %d/%d ...',s,Ns); tic;
@@ -404,7 +340,7 @@ for s = 1:Ns
 end % s-loop
 
 % save progress
-save
+save('./results/loo_models_results.mat');
 
 %% --- Global Statistics --------------------------------------------------
 
@@ -453,9 +389,7 @@ stats.global.loo.tbg = calcStats(Zobs,Ztbg,Bw);
 %% --- Save Results -------------------------------------------------------
 
 % save progress
-save
-
-fname = 'fluxnet_daily_regressions.mat';
+fname = './results/fluxnet_daily_regressions.mat';
 save(fname);
 
 %% --- Plot Stats ---------------------------------------------------------
