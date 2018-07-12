@@ -106,215 +106,214 @@ save('./data/Ydata.mat','Ydata');
 % %% --- Sensitivity Models -------------------------------------------------
 % 
 % % number of sensitivity groups
-% Nips = 2^Nx-1;
-% inps = dec2bin(2^Nx-1:-1:0)-'0';
-% inps(end,:) = [];
-% 
+Nips = 2^Nx-1;
+inps = dec2bin(2^Nx-1:-1:0)-'0';
+inps(end,:) = [];
+ 
 % % extract all X,Y data
-% Xall = reshape(permute(Xdata,[1,3,2]),[Nt*Ns,Nx]);
-% Yall = reshape(permute(Ydata,[1,3,2]),[Nt*Ns,Ny]);
-% 
+Xall = reshape(permute(Xdata,[1,3,2]),[Nt*Ns,Nx]);
+Yall = reshape(permute(Ydata,[1,3,2]),[Nt*Ns,Ny]);
+ 
 % % save input/target data
-% save('./data/Xall.mat','Xall');
-% save('./data/Yall.mat','Yall');
+save('./data/Xall.mat','Xall');
+save('./data/Yall.mat','Yall');
+ 
+% % remove missing columns from all X,Y data
+% Xall(:,all(isnan(Xall))) = []; 
 % 
-% % % remove missing columns from all X,Y data
-% % Xall(:,all(isnan(Xall))) = []; 
-% % 
-% % % remove missing rows from all X,Y data
-% % mdex = find(any(isnan([Xall,Yall]')));
-% % Xall(mdex,:) = []; Yall(mdex,:) = [];
-% % assert(isempty(find(isnan(Xall(:)),1)));
-% % assert(isempty(find(isnan(Yall(:)),1)));
-% % 
-% % % check removal of missing values
-% % assert(~any(isnan(Xall(:))));
-% % assert(~any(isnan(Yall(:))));
-% % 
-% % % number of data
-% % Na = size(Xall,1);
-% % remove = rem(Na,kfold);
-% % Xall(end-remove+1:end,:) = [];
-% % Yall(end-remove+1:end,:) = [];
+% % remove missing rows from all X,Y data
+% mdex = find(any(isnan([Xall,Yall]')));
+% Xall(mdex,:) = []; Yall(mdex,:) = [];
+% assert(isempty(find(isnan(Xall(:)),1)));
+% assert(isempty(find(isnan(Yall(:)),1)));
 % 
-% % k-fold partitioning
+% % check removal of missing values
+% assert(~any(isnan(Xall(:))));
+% assert(~any(isnan(Yall(:))));
+% 
+% % number of data
 % Na = size(Xall,1);
-% assert(rem(Na,kfold)==0);
-% Ntst = floor(Na/kfold);
-% Ntrn = Na - Ntst;
-% Itrn = zeros(Ntrn,kfold)/0;
-% Itst = zeros(Ntst,kfold)/0;
-% ii = randperm(Na);
-% edex = 0;
-% for k = 1:kfold
-%     sdex = edex+1;
-%     edex = edex+Ntst;
-%     Itst(:,k) = ii(sdex:edex);
-%     Itrn(:,k) = setdiff(1:Na,Itst(:,k));
-% end    
-% assert(Ntst*kfold == Na);
-% 
-% % init storage
-% Zsens_gpr = zeros(Na,Nips)./0;
-% Zsens_ann = zeros(Na,Nips)./0;
-% Zsens_rbm = zeros(Na,Nips)./0;
-% Zsens_tbg = zeros(Na,Nips)./0;
-% 5
-% % screen splitting
-% fprintf(repmat('-',[1,60]));
-% fprintf('\n\n');
-% 
-% % loop through inputs
-% for i = 1:Nips
-%     
-%     % sepatate training/test data
-%     ii = find(inps(i,:));
-%     
-%     % k-fold validation for ann
-%     fprintf('Training/Testing ANN - inputs: %d/%d ...',i,Nips); tic;
-%     for k = 1:kfold
-%         ann = trainANN(Xall(Itrn(:,k),ii),Yall(Itrn(:,k),:),ANNtrainParms);
-%         Zsens_ann(Itst(:,k),i) = ann(Xall(Itst(:,k),ii)');
-%     end % k-fold
-%     fprintf('. finished; time = %f \n',toc);
-%     
-%     % k-fold validation for gpr
-%     if 0 %i == 1
-%         fprintf('Training/Testing GPR - inputs: %d/%d ...',i,Nips); tic;
-%         for k = 1:kfold
-%             ard{k} = trainGPR(Xall(Itrn(:,k),ii),Yall(Itrn(:,k),:),GPRtrainParms);
-%             Zsens_gpr(Itst(:,k),i) = predict(ard{k}.RegressionGP,Xall(Itst(:,k),ii));
-%         end % k-fold
-%         fprintf('. finished; time = %f \n',toc);
-%     end
-%     
-%     % k-fold validation for bagger
-%     fprintf('Training/Testing TBG - inputs: %d/%d ...',i,Nips); tic;
-%     for k = 1:kfold
-%         tbg = trainTBG(Xall(Itrn(:,k),ii),Yall(Itrn(:,k),:),TBGtrainParms);
-%         Zsens_tbg(Itst(:,k),i) = predict(tbg.RegressionEnsemble,Xall(Itst(:,k),ii));
-%     end % k-fold
-%     fprintf('. finished; time = %f \n',toc);
-%     
-%     % calculate statistics
-%     stats.sens(i).ann = calcStats(Yall,Zsens_ann(:,i),Bw);
-%     stats.sens(i).gpr = calcStats(Yall,Zsens_gpr(:,i),Bw);
-%     stats.sens(i).rbm = calcStats(Yall,Zsens_rbm(:,i),Bw);
-%     stats.sens(i).tbg = calcStats(Yall,Zsens_tbg(:,i),Bw);
-% 
-%     % screen splitting
-%     fprintf(repmat('-',[1,60]));
-%     fprintf('\n\n');
-%     
-% end % i-loop
-% 
-% % calculate averaged-difference sensitivities
-% sens_vals = difference_sensitivities(inps,stats.sens);
-% 
-% % save progress
-% save('./results/sensitivity_results.mat');
+% remove = rem(Na,kfold);
+% Xall(end-remove+1:end,:) = [];
+% Yall(end-remove+1:end,:) = [];
+ 
+% k-fold partitioning
+Na = size(Xall,1);
+assert(rem(Na,kfold)==0);
+Ntst = floor(Na/kfold);
+Ntrn = Na - Ntst;
+Itrn = zeros(Ntrn,kfold)/0;
+Itst = zeros(Ntst,kfold)/0;
+ii = randperm(Na);
+edex = 0;
+for k = 1:kfold
+    sdex = edex+1;
+    edex = edex+Ntst;
+    Itst(:,k) = ii(sdex:edex);
+    Itrn(:,k) = setdiff(1:Na,Itst(:,k));
+end    
+assert(Ntst*kfold == Na);
+ 
+% init storage
+Zsens_gpr = zeros(Na,Nips)./0;
+Zsens_ann = zeros(Na,Nips)./0;
+Zsens_rbm = zeros(Na,Nips)./0;
+Zsens_tbg = zeros(Na,Nips)./0;
 
-% %% --- Site-Specific Models -----------------------------------------------
-% 
-% % init storage
-% Zsite_obs = zeros(Nt,Ns)./0;
-% Zsite_gpr = zeros(Nt,Ns)./0;
-% Zsite_ann = zeros(Nt,Ns)./0;
-% Zsite_rbm = zeros(Nt,Ns)./0;
-% Zsite_tbg = zeros(Nt,Ns)./0;
-% 
-% % screen splitting
-% fprintf(repmat('-',[1,60]));
-% fprintf('\n\n');
-% 
-% % loop through inputs
-% for s = 1:Ns
+% screen splitting
+fprintf(repmat('-',[1,60]));
+fprintf('\n\n');
+ 
+% loop through inputs
+for i = 1:Nips
+    
+    % sepatate training/test data
+    ii = find(inps(i,:));
+     
+    % k-fold validation for ann
+    fprintf('Training/Testing ANN - inputs: %d/%d ...',i,Nips); tic;
+    for k = 1:kfold
+        ann = trainANN(Xall(Itrn(:,k),ii),Yall(Itrn(:,k),:),ANNtrainParms);
+        Zsens_ann(Itst(:,k),i) = ann(Xall(Itst(:,k),ii)');
+    end % k-fold
+    fprintf('. finished; time = %f \n',toc);
+    
+    % k-fold validation for gpr
+    if 0 %i == 1
+        fprintf('Training/Testing GPR - inputs: %d/%d ...',i,Nips); tic;
+        for k = 1:kfold
+            ard{k} = trainGPR(Xall(Itrn(:,k),ii),Yall(Itrn(:,k),:),GPRtrainParms);
+            Zsens_gpr(Itst(:,k),i) = predict(ard{k}.RegressionGP,Xall(Itst(:,k),ii));
+        end % k-fold
+        fprintf('. finished; time = %f \n',toc);
+    end
+    
+    % k-fold validation for bagger
+    fprintf('Training/Testing TBG - inputs: %d/%d ...',i,Nips); tic;
+    for k = 1:kfold
+        tbg = trainTBG(Xall(Itrn(:,k),ii),Yall(Itrn(:,k),:),TBGtrainParms);
+        Zsens_tbg(Itst(:,k),i) = predict(tbg.RegressionEnsemble,Xall(Itst(:,k),ii));
+    end % k-fold
+    fprintf('. finished; time = %f \n',toc);
+    
+    % calculate statistics
+    stats.sens(i).ann = calcStats(Yall,Zsens_ann(:,i),Bw);
+    stats.sens(i).gpr = calcStats(Yall,Zsens_gpr(:,i),Bw);
+    stats.sens(i).rbm = calcStats(Yall,Zsens_rbm(:,i),Bw);
+    stats.sens(i).tbg = calcStats(Yall,Zsens_tbg(:,i),Bw);
+
+    % screen splitting
+    fprintf(repmat('-',[1,60]));
+    fprintf('\n\n');     
+end % i-loop
+
+% calculate averaged-difference sensitivities
+sens_vals = difference_sensitivities(inps,stats.sens);
+
+% save progress
+save('./results/sensitivity_results.mat');
+
+%% --- Site-Specific Models -----------------------------------------------
+
+% init storage
+Zsite_obs = zeros(Nt,Ns)./0;
+Zsite_gpr = zeros(Nt,Ns)./0;
+Zsite_ann = zeros(Nt,Ns)./0;
+Zsite_rbm = zeros(Nt,Ns)./0;
+Zsite_tbg = zeros(Nt,Ns)./0;
+
+% screen splitting
+fprintf(repmat('-',[1,60]));
+fprintf('\n\n');
+ 
+% loop through inputs
+for s = 1:Ns
+     
+    % sepatate training/test data
+    Xsite = Xdata(:,:,s);
+    Ysite = Ydata(:,:,s);
+    
+%     % remove missing columns from input data
+%     Xsite(:,all(isnan(Xsite))) = [];
 %     
-%     % sepatate training/test data
-%     Xsite = Xdata(:,:,s);
-%     Ysite = Ydata(:,:,s);
+%     % remove missing rows from training data
+%     mdex = find(any(isnan([Xsite,Ysite]')));
+%     Xsite(mdex,:) = []; Ysite(mdex,:) = [];
+%     assert(isempty(find(isnan(Xsite(:)),1)));
+%     assert(isempty(find(isnan(Ysite(:)),1)));
 %     
-% %     % remove missing columns from input data
-% %     Xsite(:,all(isnan(Xsite))) = [];
-% %     
-% %     % remove missing rows from training data
-% %     mdex = find(any(isnan([Xsite,Ysite]')));
-% %     Xsite(mdex,:) = []; Ysite(mdex,:) = [];
-% %     assert(isempty(find(isnan(Xsite(:)),1)));
-% %     assert(isempty(find(isnan(Ysite(:)),1)));
-% %     
-% %     % check removal of missing values
-% %     assert(~any(isnan(Xsite(:))));
-% %     assert(~any(isnan(Ysite(:))));
-% %         
-% %     % number of data points at this site
-% %     Nts = size(Xsite,1);
-% %     remove = rem(Nts,kfold);
-% %     Xsite(end-remove+1:end,:) = [];
-% %     Ysite(end-remove+1:end,:) = [];
-% %     assert(size(Ysite,1) == Nts);
-% %     
-% %     % don't bother if not enough data
-% %     if Nts < 10*kfold; continue; end
-% 
-%     % k-fold partitioning
+%     % check removal of missing values
+%     assert(~any(isnan(Xsite(:))));
+%     assert(~any(isnan(Ysite(:))));
+%         
+%     % number of data points at this site
 %     Nts = size(Xsite,1);
-%     assert(rem(Nts,kfold)==0);
-%     Ntst = floor(Nts/kfold);
-%     Ntrn = Nts - Ntst;
-%     Itrn = zeros(Ntrn,kfold)/0;
-%     Itst = zeros(Ntst,kfold)/0;
-%     ii = randperm(Nts);
-%     edex = 0;
-%     for k = 1:kfold
-%         sdex = edex+1;
-%         edex = edex+Ntst;
-%         Itst(:,k) = ii(sdex:edex);
-%         Itrn(:,k) = setdiff(1:Nts,Itst(:,k));
-%     end
-%     assert(Ntst*kfold == Nts);
+%     remove = rem(Nts,kfold);
+%     Xsite(end-remove+1:end,:) = [];
+%     Ysite(end-remove+1:end,:) = [];
+%     assert(size(Ysite,1) == Nts);
 %     
-%     % k-fold validation for ann
-%     fprintf('Training/Testing ANN - site: %d/%d ...',s,Ns); tic;
-%     for k = 1:kfold
-%         ann = trainANN(Xsite(Itrn(:,k),:),Ysite(Itrn(:,k),:),ANNtrainParms);
-%         Zsite_ann(Itst(:,k),s) = ann(Xsite(Itst(:,k),:)');
-%     end % k-loop
-%     fprintf('. finished; time = %f \n',toc);
-%     
-%     % k-fold validation for gpr
-%     fprintf('Training/Testing GPR - site: %d/%d ...',s,Ns); tic;
-%     for k = 1:kfold
-%         gpr = trainGPR(Xsite(Itrn(:,k),:),Ysite(Itrn(:,k),:),GPRtrainParms);
-%         Zsite_gpr(Itst(:,k),s) = predict(gpr.RegressionGP,Xsite(Itst(:,k),:));
-%     end % k-loop
-%     fprintf('. finished; time = %f \n',toc);
-%     
-%     % k-fold validation for bagger
-%     fprintf('Training/Testing TBG - site: %d/%d ...',s,Ns); tic;
-%     for k = 1:kfold
-%         tbg = trainTBG(Xsite(Itrn(:,k),:),Ysite(Itrn(:,k),:),TBGtrainParms);
-%         Zsite_tbg(Itst(:,k),s) = predict(tbg.RegressionEnsemble,Xsite(Itst(:,k),:));
-%     end % k-loop
-%     fprintf('. finished; time = %f \n',toc);
-%     
-%     % gather the observation data
-%     Zsite_obs(1:Nts,s) = Ysite;
-%     
-%     % calculate statistics
-%     stats.site(s).ann = calcStats(Ysite,Zsite_ann(1:Nts,s),Bw);
-%     stats.site(s).gpr = calcStats(Ysite,Zsite_gpr(1:Nts,s),Bw);
-%     stats.site(s).rbm = calcStats(Ysite,Zsite_rbm(1:Nts,s),Bw);
-%     stats.site(s).tbg = calcStats(Ysite,Zsite_tbg(1:Nts,s),Bw);
-%     
-%     % screen splitting
-%     fprintf(repmat('-',[1,60]));
-%     fprintf('\n\n');
-%     
-% end % s-loop
-% 
-% % save progress
-% save('./results/site_specific_models_results.mat');
+%     % don't bother if not enough data
+%     if Nts < 10*kfold; continue; end
+
+    % k-fold partitioning
+    Nts = size(Xsite,1);
+    assert(rem(Nts,kfold)==0);
+    Ntst = floor(Nts/kfold);
+    Ntrn = Nts - Ntst;
+    Itrn = zeros(Ntrn,kfold)/0;
+    Itst = zeros(Ntst,kfold)/0;
+    ii = randperm(Nts);
+    edex = 0;
+    for k = 1:kfold
+        sdex = edex+1;
+        edex = edex+Ntst;
+        Itst(:,k) = ii(sdex:edex);
+        Itrn(:,k) = setdiff(1:Nts,Itst(:,k));
+    end
+    assert(Ntst*kfold == Nts);
+    
+    % k-fold validation for ann
+    fprintf('Training/Testing ANN - site: %d/%d ...',s,Ns); tic;
+    for k = 1:kfold
+        ann = trainANN(Xsite(Itrn(:,k),:),Ysite(Itrn(:,k),:),ANNtrainParms);
+        Zsite_ann(Itst(:,k),s) = ann(Xsite(Itst(:,k),:)');
+    end % k-loop
+    fprintf('. finished; time = %f \n',toc);
+    
+    % k-fold validation for gpr
+    fprintf('Training/Testing GPR - site: %d/%d ...',s,Ns); tic;
+    for k = 1:kfold
+        gpr = trainGPR(Xsite(Itrn(:,k),:),Ysite(Itrn(:,k),:),GPRtrainParms);
+        Zsite_gpr(Itst(:,k),s) = predict(gpr.RegressionGP,Xsite(Itst(:,k),:));
+    end % k-loop
+    fprintf('. finished; time = %f \n',toc);
+    
+    % k-fold validation for bagger
+    fprintf('Training/Testing TBG - site: %d/%d ...',s,Ns); tic;
+    for k = 1:kfold
+        tbg = trainTBG(Xsite(Itrn(:,k),:),Ysite(Itrn(:,k),:),TBGtrainParms);
+        Zsite_tbg(Itst(:,k),s) = predict(tbg.RegressionEnsemble,Xsite(Itst(:,k),:));
+    end % k-loop
+    fprintf('. finished; time = %f \n',toc);
+    
+    % gather the observation data
+    Zsite_obs(1:Nts,s) = Ysite;
+    
+    % calculate statistics
+    stats.site(s).ann = calcStats(Ysite,Zsite_ann(1:Nts,s),Bw);
+    stats.site(s).gpr = calcStats(Ysite,Zsite_gpr(1:Nts,s),Bw);
+    stats.site(s).rbm = calcStats(Ysite,Zsite_rbm(1:Nts,s),Bw);
+    stats.site(s).tbg = calcStats(Ysite,Zsite_tbg(1:Nts,s),Bw);
+    
+    % screen splitting
+    fprintf(repmat('-',[1,60]));
+    fprintf('\n\n');
+    
+end % s-loop
+
+% save progress
+save('./results/site_specific_models_results.mat');
 
 %% --- LOO Models ---------------------------------------------------------
 
