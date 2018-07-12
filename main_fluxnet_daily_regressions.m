@@ -9,7 +9,7 @@ restoredefaultpath; addpath(genpath(pwd));
 kfold = 5;
 
 % maximum number of data points to use from each size
-Nmax = 2*365;
+Nmax = 1*365;
 
 % target columns
 % Ydex = 13;
@@ -103,21 +103,21 @@ Bw = By(2) - By(1);
 save('./data/Xdata.mat','Xdata');
 save('./data/Ydata.mat','Ydata');
 
-%% --- Sensitivity Models -------------------------------------------------
-
-% number of sensitivity groups
+% %% --- Sensitivity Models -------------------------------------------------
+% 
+% % number of sensitivity groups
 Nips = 2^Nx-1;
 inps = dec2bin(2^Nx-1:-1:0)-'0';
 inps(end,:) = [];
-
-% extract all X,Y data
+ 
+% % extract all X,Y data
 Xall = reshape(permute(Xdata,[1,3,2]),[Nt*Ns,Nx]);
 Yall = reshape(permute(Ydata,[1,3,2]),[Nt*Ns,Ny]);
-
-% save input/target data
+ 
+% % save input/target data
 save('./data/Xall.mat','Xall');
 save('./data/Yall.mat','Yall');
-
+ 
 % % remove missing columns from all X,Y data
 % Xall(:,all(isnan(Xall))) = []; 
 % 
@@ -136,7 +136,7 @@ save('./data/Yall.mat','Yall');
 % remove = rem(Na,kfold);
 % Xall(end-remove+1:end,:) = [];
 % Yall(end-remove+1:end,:) = [];
-
+ 
 % k-fold partitioning
 Na = size(Xall,1);
 assert(rem(Na,kfold)==0);
@@ -153,7 +153,7 @@ for k = 1:kfold
     Itrn(:,k) = setdiff(1:Na,Itst(:,k));
 end    
 assert(Ntst*kfold == Na);
-
+ 
 % init storage
 Zsens_gpr = zeros(Na,Nips)./0;
 Zsens_ann = zeros(Na,Nips)./0;
@@ -163,13 +163,13 @@ Zsens_tbg = zeros(Na,Nips)./0;
 % screen splitting
 fprintf(repmat('-',[1,60]));
 fprintf('\n\n');
-
+ 
 % loop through inputs
 for i = 1:Nips
     
     % sepatate training/test data
     ii = find(inps(i,:));
-    
+     
     % k-fold validation for ann
     fprintf('Training/Testing ANN - inputs: %d/%d ...',i,Nips); tic;
     for k = 1:kfold
@@ -204,15 +204,14 @@ for i = 1:Nips
 
     % screen splitting
     fprintf(repmat('-',[1,60]));
-    fprintf('\n\n');
-    
+    fprintf('\n\n');     
 end % i-loop
 
 % calculate averaged-difference sensitivities
 sens_vals = difference_sensitivities(inps,stats.sens);
 
 % save progress
-save
+save('./results/sensitivity_results.mat');
 
 %% --- Site-Specific Models -----------------------------------------------
 
@@ -226,10 +225,10 @@ Zsite_tbg = zeros(Nt,Ns)./0;
 % screen splitting
 fprintf(repmat('-',[1,60]));
 fprintf('\n\n');
-
+ 
 % loop through inputs
 for s = 1:Ns
-    
+     
     % sepatate training/test data
     Xsite = Xdata(:,:,s);
     Ysite = Ydata(:,:,s);
@@ -314,7 +313,7 @@ for s = 1:Ns
 end % s-loop
 
 % save progress
-save
+save('./results/site_specific_models_results.mat');
 
 %% --- LOO Models ---------------------------------------------------------
 
@@ -401,10 +400,16 @@ for s = 1:Ns
     fprintf(repmat('-',[1,60]));
     fprintf('\n\n');
     
+        % save progress
+    if rem(s,10)==0
+        fname = strcat('./progress/loo_progress_temp_',num2str(s),'.mat');
+        save(fname);
+    end
+    
 end % s-loop
 
 % save progress
-save
+save('./results/loo_models_results.mat');
 
 %% --- Global Statistics --------------------------------------------------
 
@@ -451,9 +456,6 @@ mdex = find(any(isnan([Zobs,Ztbg]'))); Zobs(mdex) = []; Ztbg(mdex) = [];
 stats.global.loo.tbg = calcStats(Zobs,Ztbg,Bw);
 
 %% --- Save Results -------------------------------------------------------
-
-% save progress
-save
 
 fname = 'fluxnet_daily_regressions.mat';
 save(fname);
