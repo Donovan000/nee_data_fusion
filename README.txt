@@ -1,17 +1,22 @@
+This file needs to be updated after recent significant changes (7-10-18). File should provide instructions for users.
 
-Step 1: Run <extract_fluxnet.m> to read directly from the FluxNet daily csv files.
-Step 2: Run <main_fluxnet_daily_regressions.m> to test ANN, GPR, TreeBagger models on daily fluxnet data. This script will assess sensitivity to various input columns, and will conduct (i) site-specific k-fold validation and (ii) leave-one-out cross-site validation. 
-
---- outdated --------------------------------------------------------------------
-Step 1 - Extract and prepare data:
-a) Run <extract_fluxnet.m> to read directly from the FluxNet daily csv files.
-b) Run <extract_sirf.m> to pull in RSIF data.
-c) Run <biweekly_averaging.m> to convert from daily to twice-monthly values, so that all rows have an RSIF value.
-
-Step 2 - Perform linear sensitivity analysis:
-<main_lr_fluxnet.m> assesses sensitivity to different input columns. This is probably not useful for nonlinear regression.
-
-Step 3 - Train LOO global regressions:
-Train and test nonlinear regression with a leave-one-out evaluation strategy: there are 209 sites, and we train 209 different ANN regressions, each with 208 sites worth of training data. Each regression model is tested on the remaining site not used for training. 
-Statistics are caluculated on a site-by-site basis, as well as on the whole LOO data record - i.e., all predicticted values from all sites.
+To Do:
+1) Add RBM
+2) LSTM for site-specific regressions
+3) ANN, LSTM, RBM sensitivity
+4) Add more remote sensing layers
+5) Choose best remote sensing spatial and temporal resolution
+6) Add atmospheric CO2 data - in situ and remote sensing
+7) Add AmeriFlux data to training/validation set
+8) Check for obviusly spurious data (e.g., plots at bottom of <extract_fluxnet.m>)
+9) Models based on IGPB classification - try the following
+	9a) Model Averaging based on Bayesian performance and/or parameter similarity
+	9b) Algorithm-specific model combinations (e.g., as discussed in Hinton's Coursera)
+	9c) Spatial Kriging
+	9d) Parameter Kriging
+	9e) Different models for different IGBP classifications
+	9f) Bring in MODIS annual IGBP map
+10) Add DEM map to in situ and remote sensing
+11) Plot local stats in k-fold, loo, sensitivity
+12) Add k-fold to the sensitivity regressions
 
