@@ -2,16 +2,16 @@ function net = trainANN(Xt,Yt,varargin)
 
 if nargin > 2
     parms = varargin{1};
-    if ~isfield(parms,'verbose');     parms.verbose       = 0;                     end
-    if ~isfield(parms,'nodes');       parms.nodes         = round(size(Xt,2)/2+1); end
-    if ~isfield(parms,'trainRatio');  parms.trainRatio    = 0.65;                  end
-    if ~isfield(parms,'max_fail');    parms.vmax_fail     = 100;                   end
-    if ~isfield(parms,'epochs');      parms.epochs        = 5e4;                   end
-    if ~isfield(parms,'trainFcn');    parms.trainFcn      = 'trainscg';            end
-    if ~isfield(parms,'performFcn');  parms.vperformFcn   = 'mse';                 end
+    if ~isfield(parms,'verbose');     parms.verbose       = 0;                              end
+    if ~isfield(parms,'nodes');       parms.nodes         = min(5,round(size(Xt,2)/2+1));   end
+    if ~isfield(parms,'trainRatio');  parms.trainRatio    = 0.65;                           end
+    if ~isfield(parms,'max_fail');    parms.vmax_fail     = 100;                            end
+    if ~isfield(parms,'epochs');      parms.epochs        = 5e4;                            end
+    if ~isfield(parms,'trainFcn');    parms.trainFcn      = 'trainscg';                     end
+    if ~isfield(parms,'performFcn');  parms.vperformFcn   = 'mse';                          end
 else
     parms.verbose       = 0;
-    parms.nodes         = round(size(Xt,2)/2+1);
+    parms.nodes         = min(5,round(size(Xt,2)/2+1));
     parms.trainRatio    = 0.65;
     parms.max_fail      = 100;
     parms.epochs        = 5e4;
