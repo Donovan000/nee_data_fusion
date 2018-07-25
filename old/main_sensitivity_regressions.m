@@ -9,13 +9,16 @@ restoredefaultpath; addpath(genpath(pwd));
 exType = 'rs';
 % exType = 'fn';
 
+% number of k-fold splits
+kfold = 24;
+
 % which models to use?
-Mnames = [{'ANN'},{'GPR'},{'TBG'},{'RNN'},{'RBM'}];
-Mswitch = [0,1,1,0,0];
+Mnames = [{'ANN'},{'GPR'},{'TBG'},{'RNN'}];
+Mswitch = [1,1,1,0];
 Nmodels = length(Mnames);
 
 % minimum and maximum number of data points per site
-if strcmpi(exType,'rs')
+if     strcmpi(exType,'rs')
     Nmin = 4*12*3;  % 3 years of good remote sensing data
     %     Nmax = 4*12*6;  % 6 years of good remote sensing data
 elseif strcmpi(exType,'fn')
@@ -39,14 +42,15 @@ fprintf('Loading data ...'); tic;
 
 % load the data - this is in a function call so that the data format
 % is consistent across all regression routines
-[Xdata,Ydata,Vnames] = load_regression_data(exType,Nmin);%,Nmax);
+[Xdata,Ydata,Vnames] = load_regression_data(exType,Nmin);
 
 % dimensions
 [Nt,Nx,Ns] = size(Xdata);
 [~, Ny, ~] = size(Ydata);
+assert(rem(Nt*Ns,kfold)==0);
 
 % screen report
-fprintf('. finished; time = %f \n',toc);
+fprintf('. finished; Ndata = %d; time = %f \n',Nt*Ns,toc);
 
 % mutual info bins
 Bmin = min(Ydata(:))-1e-6;
@@ -54,10 +58,59 @@ Bmax = max(Ydata(:))+1e-6;
 By = linspace(Bmin,Bmax,Nbins);
 Bw = By(2) - By(1);
 
+% count stats
+statsTemp = calcStats(randn(100,1),randn(100,1),1);
+statNames = fieldnames(statsTemp); 
+Nstats = numel(statNames);
+clear statsTemp
+
+%% --- K-Fold Data Splitting ----------------------------------------------
+
+% --- random partitioning ---
+
+% number of training and test points per kfold split
+Ntst = floor(Nt*Ns/kfold); assert(Ntst*kfold == Nt*Ns);
+Ntrn = Nt*Ns - Ntst;
+
+% init storage
+Itrn = zeros(Ntrn,kfold)/0;
+Itst = zeros(Ntst,kfold)/0;
+
+% randomized splitting
+ii = randperm(Nt*Ns);
+
+% partition in the random index
+edex = 0;
+for k = 1:kfold
+    sdex = edex+1;
+    edex = edex+Ntst;
+    Itst(:,k) = ii(sdex:edex);
+    Itrn(:,k) = setdiff(1:Nt*Ns,Itst(:,k));
+end
+
+% --- timeseries partitioning ---
+
+% % number of training and test points per kfold split
+% Ntst = floor(Nt/kfold); assert(Ntst*kfold == Nt);
+% Ntrn = Nt - Ntst;
+% 
+% % init storage
+% Jtrn = zeros(Ntrn,kfold)/0;
+% Jtst = zeros(Ntst,kfold)/0;
+% 
+% % partition in the random index
+% edex = 0;
+% for k = 1:kfold
+%     sdex = edex+1;
+%     edex = edex+Ntst;
+%     Jtst(:,k) = sdex:edex;
+%     Jtrn(:,k) = setdiff(1:Nt,Jtst(:,k));
+% end
+
 %% --- Sensitivity Models -------------------------------------------------
 
 % init storage
-sensitivity = zeros(Nx,Nmodels)./0;
+sensitivity  = zeros(Nx,Nmodels)./0;
 
 % extract all X,Y data
 Xall = reshape(permute(Xdata,[1,3,2]),[Nt*Ns,Nx]);
@@ -69,25 +122,47 @@ for s = 1:Ns
     Ysite{s} = squeeze(Ydata(:,:,s))';
 end
 
-% screen report
-fprintf('Total number of data points = %d \n',size(Xall,1));
-
 % start
 mdex = 0;
 
 % -------------------
-% big ann
+% Nx anns
 mdex = mdex+1; if Mswitch(mdex)
-    fprintf('Training/Testing ANN ...'); tic;
-    ann = trainANN(Xall,Yall,ANNtrainParms);
-    % sensitivity(:,mdex) = sobolANN(ann,Xall);
-    fprintf('. finished; time = %f \n',toc);
+    
+    Zall = zeros(size(Yall));
+    xdex = 1:Nx;
+    for k = 1:kfold
+        fprintf('Training/Testing ANN X = 0/%d, K = %d/%d ...',Nx,k,kfold); tic;
+        ann{Nx+1,k} = trainANN(Xall(Itrn(:,k),xdex),Yall(Itrn(:,k),1),ANNtrainParms);
+        Zall(Itst(:,k),1) = ann{Nx+1,k}(Xall(Itst(:,k),xdex)');
+        fprintf('. finished; time = %f \n',toc);
+    end % k-loop
+    ANNstats(Nx+1) = calcStats(Yall,Zall,Bw);
+    
+    for x = 1:Nx
+        Zall = zeros(size(Yall));
+        xdex = 1:Nx; xdex(x) = [];
+        for k = 1:kfold
+            fprintf('Training/Testing ANN X = %d/%d, K = %d/%d ...',x,Nx,k,kfold); tic;
+            ann{x,k} = trainANN(Xall(Itrn(:,k),xdex),Yall(Itrn(:,k),1),ANNtrainParms);
+            Zall(Itst(:,k),1) = ann{x,k}(Xall(Itst(:,k),xdex)');
+            fprintf('. finished; time = %f \n',toc);
+        end % k-loop
+        ANNstats(x) = calcStats(Yall,Zall,Bw);
+    end % x-loop
+    
+    for x = 1:Nx
+        sensitivity(x,mdex) = ...
+            (ANNstats(Nx+1).Correlation - ANNstats(x).Correlation) ./ ...
+            ANNstats(Nx+1).Correlation;
+    end % x-loop
+    
 end % use this model?
 
 % -------------------
 % big gpr
 mdex = mdex+1; if Mswitch(mdex)
-    fprintf('Training/Testing GPR ...'); tic;
+    fprintf('Training/Testing GPR K = %d/%d ...',k,kfold); tic;
     ard = trainGPR(Xall,Yall,GPRtrainParms);
     sensitivity(:,mdex) = 1./...
         ard.RegressionGP.KernelInformation.KernelParameters(1:end-1,1);
@@ -97,7 +172,7 @@ end % use this model?
 % -------------------
 % big tree bagger
 mdex = mdex+1; if Mswitch(mdex)
-    fprintf('Training/Testing TBG ...'); tic;
+    fprintf('Training/Testing TBG K = %d/%d ...',k,kfold); tic;
     tbg = trainTBG(Xall,Yall,TBGtrainParms);
     sensitivity(:,mdex) = ...
         oobPermutedPredictorImportance(tbg.RegressionEnsemble);
@@ -107,10 +182,33 @@ end % use this model?
 % -------------------
 % big lstm
 mdex = mdex+1; if Mswitch(mdex)
-    fprintf('Training/Testing RNN ...'); tic;
-    rnn = trainLSTM(Xsite,Ysite,LSTMtrainParms);
-    % sensitivity(:,mdex) = sobolLSTM(rnn,Xsite,Ysite);
-    fprintf('. finished; time = %f \n',toc);
+    
+    Zall = zeros(size(Yall));
+    xdex = 1:Nx;
+    for k = 1:kfold
+        fprintf('Training/Testing RNN X = 0/%d, K = %d/%d ...',Nx,k,kfold); tic;
+        rnn{Nx+1,k} = trainLSTM(,,LSTMtrainParms);
+        fprintf('. finished; time = %f \n',toc);
+    end % k-loop
+    RNNstats(Nx+1) = calcStats(Yall,Zall,Bw);
+    
+    for x = 1:Nx
+        Zall = zeros(size(Yall));
+        xdex = 1:Nx; xdex(x) = [];
+        for k = 1:kfold
+            fprintf('Training/Testing RNN X = %d/%d, K = %d/%d ...',x,Nx,k,kfold); tic;
+            rnn{x,k} = trainLSTM(,,LSTMtrainParms);
+            fprintf('. finished; time = %f \n',toc);
+        end % k-loop
+        RNNstats(x) = calcStats(Yall,Zall,Bw);
+    end % x-loop
+    
+    for x = 1:Nx
+        sensitivity(x,mdex) = ...
+            (RNNstats(Nx+1).Correlation - RNNstats(x).Correlation) ./ ...
+            RNNstats(Nx+1).Correlation;
+    end % x-loop
+    
 end % use this model?
 
 %% --- Save Results -------------------------------------------------------
@@ -121,10 +219,12 @@ save(fname);
 
 %% --- Plot Results -------------------------------------------------------
 
+% remove non-used models
+Nmodels = sum(Mswitch);
+sensitivity(:,Mswitch==0) = [];
+
 % concatenate sensitivty results
-for m = 1:Nmodels
-    sensitivity(:,m) = sensitivity(:,m) ./ sum(sensitivity(:,m));
-end
+sensNorm = sensitivity ./ repmat(sum(sensitivity,1),[Nx,1]);
 
 % set up figure
 fignum = 1; figure(fignum); close(fignum); figure(fignum);
@@ -132,7 +232,13 @@ set(gcf,'color','w');
 set(gcf,'position',[473   421   968   384]);
 
 % plot the data
-bar(sensitivity(:,Mswitch==1));
+hb = bar(sensNorm); hold on;
+% for m = 1:Nmodels
+%     xlocs = hb(m).XData + hb(m).XOffset;
+%     if Mswitch(m) == 1
+%         errorbar(xlocs,mu,mn,mx,'-o');
+%     end
+% end
 
 % labels
 set(gca,'xticklabels',Vnames); xtickangle(60);

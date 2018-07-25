@@ -46,36 +46,24 @@ for v = 1:Nv
     
     found = 0;
     
-    % check raw data name
+    % check for layer/version extentions
     vartemp = vars{v};
-    for h = 1:length(headers)
-        if strcmpi(vartemp,headers{h})
-            dataOut(:,v) = dataRaw(:,h);
-            found = 1;
-            break
-        end % strcmpi
-    end % h-loop
-    if found; break; end
+    for c = 1:10
+        for h = 1:length(headers)
+            if strcmpi(vartemp,headers{h})
+                dataOut(:,v) = dataRaw(:,h);
+                found = 1;
+                break;
+            end % strcmpi
+        end % h-loop
+        if found; break; end
+        vartemp = strcat(vartemp,'_1');
+    end % c-loop
     
     % check for modified column headers
     for m = 1:Nm
-        
-        % check for explicit modifiers
-        if ~found
-            vartemp = strcat(vars{v},modifiers{m});
-            for h = 1:length(headers)
-                if strcmpi(vartemp,headers{h})
-                    dataOut(:,v) = dataRaw(:,h);
-                    found = 1;
-                    break
-                end % strcmpi
-            end % h-loop
-        end % if ~found
-        if found; break; end
-        
-        % check for layer/version extentions
-        vartemp = strcat(vars{v},'_1_1_1_1_1_1_1_1_1');
-        while ~found
+        vartemp = strcat(vars{v},modifiers{m});
+        for c = 1:10
             for h = 1:length(headers)
                 if strcmpi(vartemp,headers{h})
                     dataOut(:,v) = dataRaw(:,h);
@@ -83,12 +71,10 @@ for v = 1:Nv
                     break;
                 end % strcmpi
             end % h-loop
-            if ~found && ~isempty(vartemp)
-                vartemp = vartemp(1:end-2);
-            elseif ~found && isempty(vartemp)
-                break
-            end
-        end % while ~found        
+            if found; break; end
+            vartemp = strcat(vartemp,'_1');
+        end % c-loop
+        if found; break; end
     end % m-loop
 
 end % v-loop
@@ -101,10 +87,10 @@ dataOut(:,8) = dataOut(:,8) + dataOut(:,9);
 dataOut(:,9) = [];
 
 % check that one of the precip variables was found
-if ~all(isnan(dataOut(:,3)))
-    dataOut(:,2) = dataOut(:,3);
+if all(isnan(dataOut(:,3)))
+    dataOut(:,3) = dataOut(:,2);
 end
-dataOut(:,3) = [];
+dataOut(:,2) = [];
 
 % daily averaging
 dataOut(:,1) = floor(dataOut(:,1)/1e4);
@@ -119,9 +105,4 @@ for d = 1:Ndays
     dayOut(d,3:end) = nanmean(dataOut(Id,3:end));
     dataOut(Id,:) = [];
 end
-
-% % outgoing variable names
-% Onames = [{'Year'},{'DOY'},{'Precip'},{'Air Temp'},{'Air Pressure'}, ...
-%     {'Surf Radiation'},{'Windspeed'},{'Latent Heat'},{'Sensible Heat'}, ...
-%     {'Surface SWC'},{'Surface Temp'},{'Vapor Deficit'}];
 

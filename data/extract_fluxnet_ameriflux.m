@@ -50,41 +50,42 @@ end
 
 %% --- Load AmeriFlux Data --------------------------------------------------
 
-% list all *.csv files in ameriflux subdirectories
-filepattern = sprintf('%s/**/*.csv','./ameriflux_half_hourly');
-fileList = dir(filepattern);
-
-% number of ameriflux half-hourly files
-Naf = length(fileList);
-
-% read ameriFlux data into cells
-for f = 1:Naf; tic;
-    
-    % screen report
-    fprintf('Loading AmeriFlux file %d/%d ...',f,Naf); tic;
-    
-    % load data from file and store in cell array
-    fname = strcat(fileList(f).folder,'/',fileList(f).name);
-    [Xdata{Nfx+f},sname] = read_ameriflux_csv(fname);
-    assert(size(Xdata{Nfx+f},2) == Nout+1-1);
-
-    % remove target data
-    Ydata{Nfx+f} = Xdata{Nfx+f}(:,end);
-    Xdata{Nfx+f}(:,end) = [];
-    
-    % get site name
-    Snames{Nfx+f} = fileList(f).name(5:10); % Associate site name
-    assert(strcmpi(sname,Snames{Nfx+f}));
-    
-    % screen report
-    fprintf('. finished; name = %s, time = %f \n',Snames{f},toc);
-
-end
+% % list all *.csv files in ameriflux subdirectories
+% filepattern = sprintf('%s/**/*.csv','./ameriflux_half_hourly');
+% fileList = dir(filepattern);
+% 
+% % number of ameriflux half-hourly files
+% Naf = length(fileList);
+% 
+% % read ameriFlux data into cells
+% for f = 1:Naf; tic;
+%     
+%     % screen report
+%     fprintf('Loading AmeriFlux file %d/%d ...',f,Naf); tic;
+%     
+%     % load data from file and store in cell array
+%     fname = strcat(fileList(f).folder,'/',fileList(f).name);
+%     [Xdata{Nfx+f},sname] = read_ameriflux_csv(fname);
+%     assert(size(Xdata{Nfx+f},2) == Nout+1-1);
+% 
+%     % remove target data
+%     Ydata{Nfx+f} = Xdata{Nfx+f}(:,end);
+%     Xdata{Nfx+f}(:,end) = [];
+%     
+%     % get site name
+%     Snames{Nfx+f} = fileList(f).name(5:10); % Associate site name
+%     assert(strcmpi(sname,Snames{Nfx+f}));
+%     
+%     % screen report
+%     fprintf('. finished; name = %s, time = %f \n',Snames{f},toc);
+% 
+% end
 
 %% --- Create Target Data Structure ---------------------------------------
 
-% total number of sites
-Ns = Nfx + Naf;
+% % total number of sites
+% Ns = Nfx + Naf;
+Ns = Nfx;
 
 % Find first and last day in data record
 firstDateStore = 9e10;
