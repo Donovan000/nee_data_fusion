@@ -174,8 +174,8 @@ for s = 1:Ns
     stats(s).rnn = calcStats(Ysite,Zrnn(:,s),Bw);
     
     % save progress
-    if rem(s,10) == 0
-        fname = strcat('./progress/site_regressions_',exType,'_',num2str(s),'.mat');
+    if rem(s,5) == 0
+        fname = strcat('./progress/',exType,'_site_',num2str(s),'.mat');
         save(fname);
     end
     
