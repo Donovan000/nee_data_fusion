@@ -109,8 +109,8 @@ fprintf('. finished; time = %f. \n',toc);
 for d = 1:size(daily_averages,2)
     
     figure(d); close(d); figure(d)
-    plot(Xdata(:,d,:));
-    %title(Vnames(d))
+    plot(squeeze(Xdata(:,d,:)));
+    title(Xnames(d))
     
 end
 
