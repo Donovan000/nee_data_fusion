@@ -22,7 +22,7 @@ Nout = length(Xnames); % number of output dimensions
 % list all *.csv files in subdirectories
 filepattern = sprintf('%s/*.csv',Fdir);
 flist = dir(filepattern);
-filepattern = sprintf('%s/**/*.csv',Adir);
+filepattern = sprintf('%s/*.csv',Adir);
 alist = dir(filepattern);
 fileList = [flist(:);alist(:)];
 
