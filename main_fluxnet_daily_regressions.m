@@ -9,7 +9,7 @@ restoredefaultpath; addpath(genpath(pwd));
 kfold = 5;
 
 % maximum number of data points to use from each size
-Nmax = 2*365;
+Nmax = 1*365;
 
 % target columns
 % Ydex = 13;
@@ -99,25 +99,44 @@ Bmax = max(Ydata(:))+1e-6;
 By = linspace(Bmin,Bmax,Nbins);
 Bw = By(2) - By(1);
 
-% % save input/target data
-% save('./data/Xdata.mat','Xdata');
-% save('./data/Ydata.mat','Ydata');
+% save input/target data
+save('./data/Xdata.mat','Xdata');
+save('./data/Ydata.mat','Ydata');
 
-%% --- Sensitivity Models -------------------------------------------------
-
-% number of sensitivity groups
+% %% --- Sensitivity Models -------------------------------------------------
+% 
+% % number of sensitivity groups
 Nips = 2^Nx-1;
 inps = dec2bin(2^Nx-1:-1:0)-'0';
 inps(end,:) = [];
-
-% extract all X,Y data
+ 
+% % extract all X,Y data
 Xall = reshape(permute(Xdata,[1,3,2]),[Nt*Ns,Nx]);
 Yall = reshape(permute(Ydata,[1,3,2]),[Nt*Ns,Ny]);
-
-% save input/target data
+ 
+% % save input/target data
 save('./data/Xall.mat','Xall');
 save('./data/Yall.mat','Yall');
-
+ 
+% % remove missing columns from all X,Y data
+% Xall(:,all(isnan(Xall))) = []; 
+% 
+% % remove missing rows from all X,Y data
+% mdex = find(any(isnan([Xall,Yall]')));
+% Xall(mdex,:) = []; Yall(mdex,:) = [];
+% assert(isempty(find(isnan(Xall(:)),1)));
+% assert(isempty(find(isnan(Yall(:)),1)));
+% 
+% % check removal of missing values
+% assert(~any(isnan(Xall(:))));
+% assert(~any(isnan(Yall(:))));
+% 
+% % number of data
+% Na = size(Xall,1);
+% remove = rem(Na,kfold);
+% Xall(end-remove+1:end,:) = [];
+% Yall(end-remove+1:end,:) = [];
+ 
 % k-fold partitioning
 Na = size(Xall,1);
 assert(rem(Na,kfold)==0);
@@ -134,7 +153,7 @@ for k = 1:kfold
     Itrn(:,k) = setdiff(1:Na,Itst(:,k));
 end    
 assert(Ntst*kfold == Na);
-
+ 
 % init storage
 Zsens_gpr = zeros(Na,Nips)./0;
 Zsens_ann = zeros(Na,Nips)./0;
@@ -144,13 +163,13 @@ Zsens_tbg = zeros(Na,Nips)./0;
 % screen splitting
 fprintf(repmat('-',[1,60]));
 fprintf('\n\n');
-
+ 
 % loop through inputs
 for i = 1:Nips
     
     % sepatate training/test data
     ii = find(inps(i,:));
-    
+     
     % k-fold validation for ann
     fprintf('Training/Testing ANN - inputs: %d/%d ...',i,Nips); tic;
     for k = 1:kfold
@@ -185,8 +204,7 @@ for i = 1:Nips
 
     % screen splitting
     fprintf(repmat('-',[1,60]));
-    fprintf('\n\n');
-    
+    fprintf('\n\n');     
 end % i-loop
 
 % calculate averaged-difference sensitivities
@@ -207,13 +225,36 @@ Zsite_tbg = zeros(Nt,Ns)./0;
 % screen splitting
 fprintf(repmat('-',[1,60]));
 fprintf('\n\n');
-
+ 
 % loop through inputs
 for s = 1:Ns
-    
+     
     % sepatate training/test data
     Xsite = Xdata(:,:,s);
     Ysite = Ydata(:,:,s);
+    
+%     % remove missing columns from input data
+%     Xsite(:,all(isnan(Xsite))) = [];
+%     
+%     % remove missing rows from training data
+%     mdex = find(any(isnan([Xsite,Ysite]')));
+%     Xsite(mdex,:) = []; Ysite(mdex,:) = [];
+%     assert(isempty(find(isnan(Xsite(:)),1)));
+%     assert(isempty(find(isnan(Ysite(:)),1)));
+%     
+%     % check removal of missing values
+%     assert(~any(isnan(Xsite(:))));
+%     assert(~any(isnan(Ysite(:))));
+%         
+%     % number of data points at this site
+%     Nts = size(Xsite,1);
+%     remove = rem(Nts,kfold);
+%     Xsite(end-remove+1:end,:) = [];
+%     Ysite(end-remove+1:end,:) = [];
+%     assert(size(Ysite,1) == Nts);
+%     
+%     % don't bother if not enough data
+%     if Nts < 10*kfold; continue; end
 
     % k-fold partitioning
     Nts = size(Xsite,1);
@@ -272,7 +313,7 @@ for s = 1:Ns
 end % s-loop
 
 % save progress
-save('./results/site_by_site_results.mat');
+save('./results/site_specific_models_results.mat');
 
 %% --- LOO Models ---------------------------------------------------------
 
@@ -294,17 +335,39 @@ for s = 1:Ns
     Sdex = 1:Ns;
     Sdex(s) = [];
     
-    % select random training points at each site
-    idex = randperm(1:Nmax,round(Nmax/2));
-    Nti = length(idex);
-    
     % extract training data
-    Xtrn = reshape(permute(Xdata(idex,:,Sdex),[1,3,2]),[Nti*(Ns-1),Nx]);
-    Ytrn = reshape(permute(Ydata(idex,:,Sdex),[1,3,2]),[Nti*(Ns-1),Ny]);
+    Xtrn = reshape(permute(Xdata(:,:,Sdex),[1,3,2]),[Nt*(Ns-1),Nx]);
+    Ytrn = reshape(permute(Ydata(:,:,Sdex),[1,3,2]),[Nt*(Ns-1),Ny]);
     
     % extract test data
     Xtst = squeeze(Xdata(:,:,s));
     Ytst = squeeze(Ydata(:,:,s));
+
+%     % remove missing columns from input data
+%     mdex = find(all(isnan(Xtst)));
+%     Xtst(:,mdex) = []; Xtrn(:,mdex) = [];
+%     
+%     % remove missing rows from training data
+%     mdex = find(any(isnan([Xtrn,Ytrn]')));
+%     Xtrn(mdex,:) = []; Ytrn(mdex,:) = [];
+%     assert(isempty(find(isnan(Xtrn(:)),1)));
+%     assert(isempty(find(isnan(Ytrn(:)),1)));
+%     
+%     % remove missing rows from test data
+%     mdex = find(any(isnan([Xtst,Ytst]')));
+%     Xtst(mdex,:) = []; Ytst(mdex,:) = [];
+%     assert(isempty(find(isnan(Xtst(:)),1)));
+%     assert(isempty(find(isnan(Ytst(:)),1)));
+% 
+%     % check removal of missing values
+%     assert(~any(isnan(Xtrn(:))));
+%     assert(~any(isnan(Ytrn(:))));
+%     assert(~any(isnan(Xtst(:))));
+%     assert(~any(isnan(Ytst(:))));
+% 
+%     % don't bother if not enough data
+%     if length(Ytst) < kfold*10; continue; end
+%     if length(Ytrn) < kfold*10; continue; end
 
     % loo ann
     fprintf('Training/Testing ANN - loo: %d/%d ...',s,Ns); tic;
@@ -336,6 +399,12 @@ for s = 1:Ns
     % screen splitting
     fprintf(repmat('-',[1,60]));
     fprintf('\n\n');
+    
+        % save progress
+    if rem(s,10)==0
+        fname = strcat('./progress/loo_progress_temp_',num2str(s),'.mat');
+        save(fname);
+    end
     
 end % s-loop
 
@@ -388,8 +457,7 @@ stats.global.loo.tbg = calcStats(Zobs,Ztbg,Bw);
 
 %% --- Save Results -------------------------------------------------------
 
-% save progress
-fname = './results/fluxnet_daily_regressions.mat';
+fname = 'fluxnet_daily_regressions.mat';
 save(fname);
 
 %% --- Plot Stats ---------------------------------------------------------
@@ -499,4 +567,3 @@ for i = 1:Nips
 end
 
 %% *** END SCRIPT *********************************************************
-
