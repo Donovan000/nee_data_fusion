@@ -11,7 +11,7 @@ exType = 'rs';
 
 % which models to use?
 Mnames = [{'ANN'},{'GPR'},{'TBG'},{'RNN'}];
-Mswitch = [1,1,1,1];
+Mswitch = [1,1,1,0];
 Nmodels = length(Mnames);
 
 % number of validation partitions
@@ -40,7 +40,7 @@ fprintf('Loading data ...'); tic;
 
 % load the data - this is in a function call so that it is consistent
 % across all regression routines
-[Xdata,Ydata,Vnames] = load_regression_data(exType,Nmin);
+[Xdata,Ydata,Vnames] = load_regression_data(exType,Nmin,Mswitch(4));
 
 % dimensions
 [Nt,Nx,Ns] = size(Xdata);
@@ -59,6 +59,7 @@ Bw = By(2) - By(1);
 %% --- Site-Specific Models -----------------------------------------------
 
 % init storage
+Zobs = zeros(Nt,Ns)./0; % observation data
 Zann = zeros(Nt,Ns)./0; % ann predictions
 Zgpr = zeros(Nt,Ns)./0; % gpr predictions
 Ztbg = zeros(Nt,Ns)./0; % tbg predictions
@@ -73,7 +74,6 @@ for s = 1:Ns
     % sepatate training/test data
     Xsite = Xdata(:,:,s);
     Ysite = Ydata(:,s);
-    assert(size(Ysite,2) == 1);
         
     % k-fold partitioning
     Ntst = floor(Nt/kfold); assert(Ntst*kfold == Nt);
@@ -89,6 +89,11 @@ for s = 1:Ns
         Itrn(:,k) = setdiff(1:Nt,Itst(:,k));
     end
     
+    % -------------------
+    % gather the observation data
+    Zobs(:,s) = Ysite;
+    assert(isempty(find(isnan(Zobs(:,s)),1)));
+
     % start
     mdex = 0;
         
@@ -168,15 +173,15 @@ for s = 1:Ns
     
     
     % calculate test statistics
-    stats(s).ann = calcStats(Ysite,Zann(:,s),Bw);
-    stats(s).gpr = calcStats(Ysite,Zgpr(:,s),Bw);
-    stats(s).tbg = calcStats(Ysite,Ztbg(:,s),Bw);
-    stats(s).rnn = calcStats(Ysite,Zrnn(:,s),Bw);
+    stats(s).ann = calcStats(Zobs(:,s),Zann(:,s),Bw);
+    stats(s).gpr = calcStats(Zobs(:,s),Zgpr(:,s),Bw);
+    stats(s).tbg = calcStats(Zobs(:,s),Ztbg(:,s),Bw);
+    stats(s).rnn = calcStats(Zobs(:,s),Zrnn(:,s),Bw);
     
     % save progress
     if rem(s,5) == 0
         fname = strcat('./progress/',exType,'_site_',num2str(s),'.mat');
-        save(fname);
+        save(fname,'-v7.3');
     end
     
     % screen splitting
@@ -187,16 +192,16 @@ end % s-loop
 %% --- Global Statistics --------------------------------------------------
 
 % site-regression global stats
-globalStats.ann = calcStats(Ydata(:),Zann(:),Bw);
-globalStats.gpr = calcStats(Ydata(:),Zgpr(:),Bw);
-globalStats.tbg = calcStats(Ydata(:),Ztbg(:),Bw);
-globalStats.rnn = calcStats(Ydata(:),Zrnn(:),Bw);
+globalStats.ann = calcStats(Zobs(:),Zann(:),Bw);
+globalStats.gpr = calcStats(Zobs(:),Zgpr(:),Bw);
+globalStats.tbg = calcStats(Zobs(:),Ztbg(:),Bw);
+globalStats.rnn = calcStats(Zobs(:),Zrnn(:),Bw);
 
 %% --- Save Results -------------------------------------------------------
 
 % save progress
 fname = strcat('./results/site_regressions_',exType,'.mat');
-save(fname);
+save(fname,'-v7.3');
 
 %% --- Plot Local Stats ---------------------------------------------------
 
