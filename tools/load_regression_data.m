@@ -13,7 +13,7 @@ elseif strcmpi(exType,'fn') % fluxnet data
     load('Vnames.mat');                   % regression variable names
     Xdata(:,[1,2],:) = [];                % remove dates from inputs
     Ydata(:,[1,2],:) = [];                % remove dates from targets
-    Vnames([1,2]) = [];                       % remove dates from variable names
+    Vnames([1,2]) = [];                   % remove dates from variable names
 else
     fprintf('Experiment type (%s) not recognized',exType);
     error('');
@@ -22,10 +22,12 @@ end
 % dimensions
 Ns = size(Xdata,3);
 
+% flags for keeping individual sites
+Is = zeros(Ns,1)./0;
+
 if isConsecutive
     
     % find consecutive sequences of sufficient length at each site
-    Is = zeros(Ns,1)./0; % flags for keeping individual sites
     for s = 1:Ns
         
         % separate site data
@@ -42,17 +44,14 @@ if isConsecutive
         % store good data stretch
         if L(j) >= Nmin
             Is(s) = V(j);
-            l = Nmin;%min(L(j),Nmax);
-            Xdata(1:l,:,s) = Xdata(Is(s)+(0:l-1),:,s);
-            Ydata(1:l,:,s) = Ydata(Is(s)+(0:l-1),:,s);
+            Xdata(1:Nmin,:,s) = Xsite(Is(s)+(0:Nmin-1),:);
+            Ydata(1:Nmin,:,s) = Ysite(Is(s)+(0:Nmin-1),:);
         end
         
     end % s-loop
     
 else % if ~isConsecutive
     
-    % find consecutive sequences of sufficient length at each site
-    Is = zeros(Ns,1)./0; % flags for keeping individual sites
     for s = 1:Ns
         
         % separate site data
@@ -60,18 +59,16 @@ else % if ~isConsecutive
         Ysite = Ydata(:,:,s);
         assert(size(Ysite,2) == 1);
         
-        % find longest stretch of consecutive days
-        Ig = all(~isnan([Xsite,Ysite]'));
-        [M,V] = regexp(sprintf('%i',Ig),'1+','match');
-        L = cellfun('length',M);
-        [~,j] = max(L);
+        % take random sample
+        Ig = find(all(~isnan([Xsite,Ysite]')));
+        Ng = length(Ig);
         
         % store good data stretch
-        if L(j) >= Nmin
-            Is(s) = V(j);
-            l = Nmin;%min(L(j),Nmax);
-            Xdata(1:l,:,s) = Xdata(Is(s)+(0:l-1),:,s);
-            Ydata(1:l,:,s) = Ydata(Is(s)+(0:l-1),:,s);
+        if Ng >= Nmin
+            Is(s) = -1;
+            S = randsample(Ng,Nmin);
+            Xdata(1:Nmin,:,s) = Xsite(Ig(S),:); 
+            Ydata(1:Nmin,:,s) = Ysite(Ig(S),:);
         end
         
     end % s-loop
@@ -88,5 +85,5 @@ Xdata(:,:,isnan(Is)) = [];
 Ydata(:,:,isnan(Is)) = [];
 
 % check for any stragglers
-assert(~any(isnan(Xdata(:))))
-assert(~any(isnan(Ydata(:))))
+assert(all(~isnan(Xdata(:))))
+assert(all(~isnan(Ydata(:))))

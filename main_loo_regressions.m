@@ -11,7 +11,7 @@ exType = 'rs';
 
 % which models to use?
 Mnames = [{'ANN'},{'GPR'},{'TBG'},{'RNN'}];
-Mswitch = [1,1,1,1];
+Mswitch = [1,1,1,0];
 Nmodels = length(Mnames);
 
 % minimum and maximum number of data points per site
@@ -37,11 +37,12 @@ fprintf('Loading data ...'); tic;
 
 % load the data - this is in a function call so that it is consistent
 % across all regression routines
-[Xdata,Ydata,Vnames] = load_regression_data(exType,Nmin);
+[Xdata,Ydata,Vnames] = load_regression_data(exType,Nmin,Mswitch(4));
 
 % dimensions
 [Nt,Nx,Ns] = size(Xdata);
 [~, Ny, ~] = size(Ydata);
+assert(Ny == 1); Ydata = squeeze(Ydata);
 
 % screen report
 fprintf('. finished; time = %f \n',toc);
@@ -55,7 +56,6 @@ Bw = By(2) - By(1);
 %% --- Leave-One-Out Models -----------------------------------------------
 
 % init storage
-Ng = zeros(Ns,1)./0;    % number of data points per site
 Zobs = zeros(Nt,Ns)./0; % observation data
 Zann = zeros(Nt,Ns)./0; % ann predictions
 Zgpr = zeros(Nt,Ns)./0; % gpr predictions
@@ -74,11 +74,11 @@ for s = 1:Ns
         
     % extract training data
     Xtrn = reshape(permute(Xdata(:,:,Sdex),[1,3,2]),[Nt*(Ns-1),Nx]);
-    Ytrn = reshape(permute(Ydata(:,:,Sdex),[1,3,2]),[Nt*(Ns-1),Ny]);
+    Ytrn = reshape(permute(Ydata(:  ,Sdex),[1,3,2]),[Nt*(Ns-1),Ny]);
     
     % extract test data
     Xtst = squeeze(Xdata(:,:,s));
-    Ytst = squeeze(Ydata(:,:,s));
+    Ytst = squeeze(Ydata(:  ,s));
 
     % -------------------
     % gather the observation data
@@ -126,7 +126,7 @@ for s = 1:Ns
         clear XXtrn YYtrn XXtst
         for ss = 1:Ns
             XXtrn{ss} = squeeze(Xdata(:,:,ss))';
-            YYtrn{ss} = squeeze(Ydata(:,:,ss))';
+            YYtrn{ss} = squeeze(Ydata(:  ,ss))';
         end; XXtrn(s) = []; YYtrn(s) = [];
         [rnn{s},mu,sg] = trainLSTM(XXtrn,YYtrn,LSTMtrainParms);
         XXtst = {(squeeze(Xdata(:,:,s))'-mu)./sg};
@@ -144,7 +144,7 @@ for s = 1:Ns
     % save progress
     if rem(s,5) == 0
         fname = strcat('./progress/',exType,'_loo_',num2str(s),'.mat');
-        save(fname);
+        save(fname,'-v7.3');
     end
     
     % screen splitting
@@ -164,7 +164,7 @@ globalStats.rnn = calcStats(Zobs(:),Zrnn(:),Bw);
 
 % save progress
 fname = strcat('./results/loo_regressions_',exType,'.mat');
-save(fname);
+save(fname,'-v7.3');
 
 %% --- Plot Local Stats ---------------------------------------------------
 
