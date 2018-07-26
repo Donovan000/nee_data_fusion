@@ -1,2 +1,4 @@
 *.m~
 progress/*.mat
+results/*.mat
+data/in_situ/extracted/*.mat
