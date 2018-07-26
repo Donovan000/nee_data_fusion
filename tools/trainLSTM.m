@@ -1,31 +1,42 @@
-function net = trainLSTM(Xt,Yt,varargin)
+function [net,mu,sg] = trainLSTM(X,Y,varargin)
 
-%% -- meta parameters -----------------------------------------------------
+%% --- prepare data -------------------------------------------------------
 
 % dimensions
-[Nt,Dx] = size(Xt);
+Ns = length(X);
+[Dx,Nt] = size(X{1});
+assert(Nt == size(Y{1},2));
+assert(1  == size(Y{1},1));
+assert(Ns == length(Y));
+
+% standardize
+mu = mean([X{:}],2);
+sg = std( [X{:}],0,2);
+for s = 1:Ns
+    X{s} = (X{s} - mu) ./ sg;
+end
+
+%% -- training parameters -------------------------------------------------
 
 % training and network parameters
 if nargin > 2
     parms = varargin{1};
-    if ~isfield(parms,'epochs');         parms.epochs         = 5e4;                       end
-    if ~isfield(parms,'verbose');        parms.verbose        = 0;                         end
-    if ~isfield(parms,'connectedNodes'); parms.connectedNodes = [round(size(Xt,2)/2+1),1]; end
-    if ~isfield(parms,'lstmNodes');      parms.lstmNodes      = 20;                        end
-    if ~isfield(parms,'miniBatchSize');  parms.miniBatchSize  = round(Dx*2);               end
-    if ~isfield(parms,'droupout');       parms.dropout        = 0;                         end
+    if ~isfield(parms,'epochs');         parms.epochs         = 5e4;              end
+    if ~isfield(parms,'verbose');        parms.verbose        = 0;                end
+    if ~isfield(parms,'connectedNodes'); parms.connectedNodes = [ceil(Dx/2+1),1]; end
+    if ~isfield(parms,'lstmNodes');      parms.lstmNodes      = Dx*2;             end
+    if ~isfield(parms,'miniBatchSize');  parms.miniBatchSize  = Ns;               end
+    if ~isfield(parms,'droupout');       parms.dropout        = 0;                end
 else
-    parms.epochs         = 5e4;                       
+    parms.epochs         = 5e2;                       
     parms.verbose        = 0;                         
-    parms.connectedNodes = [round(size(Xt,2)/2+1),1]; 
-    parms.lstmNodes      = 20;                        
-    parms.miniBatchSize  = round(Dx*2);     
+    parms.connectedNodes = [ceil(Dx/2+1),1]; 
+    parms.lstmNodes      = Dx*2;                        
+    parms.miniBatchSize  = Ns;     
     parms.dropout        = 0;
 end
     
 %% --- set up network -----------------------------------------------------
-
-error('how to normalize the input data?')
 
 % add input layer
 layers = sequenceInputLayer(Dx);
@@ -53,23 +64,12 @@ options = trainingOptions('adam', ...
     'InitialLearnRate',0.01, ...
     'GradientThreshold',1, ...
     'Shuffle','never', ...
-    'Plots','training-progress',...
+    'Plots','none',... % 'training-progress',...
     'Verbose',parms.verbose);
 
 %% --- train the network --------------------------------------------------
 
-% normalize input data
-mu = mean(Xt);
-sg = std(Xt);
-for x = 1:Dx
-    Xt(:,x) = (Xt(:,x) - mu(x)) ./ sg(x);
-end % x-loop
-
 % train the network
-net = trainNetwork(Xt,Yt,layers,options);
-
-% add normalization to model 
-net.mu = mu;
-net.sg = sg;
+net = trainNetwork(X,Y,layers,options);
 
 %% --- end function -------------------------------------------------------

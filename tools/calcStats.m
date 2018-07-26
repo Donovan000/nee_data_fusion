@@ -1,4 +1,6 @@
-function stats = calcStats(O,M,Bw)
+function stats = calcStats_alt(O,M,Bw)
+
+%% --- prepare data -------------------------------------------------------
 
 % reshape
 O = O(:);
@@ -6,61 +8,55 @@ M = M(:);
 assert(length(O) == length(M))
 
 % remove gradmas
-Nbefore = length(O);
 Im = find(isnan(O)); O(Im) = []; M(Im) = [];
 Im = find(isnan(M)); O(Im) = []; M(Im) = [];
 
-if length(O) > 0.5*Nbefore
-    
-    % number of data points
-    stats.ndata = length(O);
-    
-    % root mean squared error
-    stats.rmse = sqrt(nanmean((O-M).^2));
-    stats.nse = 1-sqrt(nanmean((O-M).^2))/sqrt(nanmean((O-nanmean(O)).^2));
-    
-    % mean biased error
-    stats.mbe = sqrt(nanmean(abs(M-O)));
-    
-    % correlation coeficient
-    stats.r = corr(O,M);
-    
-    % normalized mean error
-    stats.nme = sum(abs(M-O))/sum(abs(O-mean(O)));
-    
-    % fifth and ninety-fifth percentiles
-    stats.p5  = abs(prctile(M,5 )-prctile(O,5 ));
-    stats.p95 = abs(prctile(M,95)-prctile(O,95));
+% number of samples
+stats.Ndata = length(O);
 
-    % standard deviation
-    stats.sd    = abs(1-std(M)/std(O));
-    
-    % skewness
-    stats.skew  = abs(skewness(M)-skewness(O));
-    
-    % kurtosis
-    stats.kurt  = abs(kurtosis(M)-kurtosis(O));
-    
-    % overlap
-    hm = histcounts(M,100)./length(M);
-    ho = histcounts(O,100)./length(O);
-    stats.over  = sum(min(hm,ho));
-    
-    % mutual information
-    stats.mi = mutual_info_ratio(O,M,Bw);
-    
+%% --- distribution statistics --------------------------------------------
+
+% first four moments
+stats.Bias     = (mean(M)     - mean(O))     ./ abs(mean(O));     % 1st moment (bias)
+stats.Variance = (var(M)      - var(O))      ./ abs(var(O));      % 2nd moment (sigma)
+stats.Skewness = (skewness(M) - skewness(O)) ./ abs(skewness(O)); % 3rd moment (skew)
+stats.Kurtosis = (kurtosis(M) - kurtosis(O)) ./ abs(kurtosis(O)); % 4th moment (kurtosis)
+
+% KL-divergence
+stats.KLDiv = kldiv(O,M,Bw);
+
+%% --- correlation statistics ---------------------------------------------
+
+% linear correlation
+if length(O) >= 10
+    stats.Correlation = corr(O,M);
 else
+    stats.Correlation = 0/0;
+end
+
+% coefficient of determination
+stats.CoD = stats.Correlation.^2;
+
+% mutual information
+stats.Information = mutual_info_ratio(O,M,Bw);
+
+%% --- ad hoc statistics --------------------------------------------------
+
+% root mean squared error
+stats.RMSE = sqrt(mean((O-M).^2));
+
+%% --- small sample sizes -------------------------------------------------
+
+% is not enough data then pverwrite everything with grandmas
+if length(O) < 10
     
-    stats.rmse  = 0/0;
-    stats.mbe   = 0/0;
-    stats.r     = 0/0;
-    stats.nme   = 0/0;
-    stats.p5    = 0/0;
-    stats.p95   = 0/0;
-    stats.sd    = 0/0;
-    stats.skew  = 0/0;
-    stats.kurt  = 0/0;
-    stats.over  = 0/0;
-    stats.mi    = 0/0;
+    statNames = fieldnames(stats);
+    Nstats = numel(statNames);
+    
+    for s = 1:Nstats
+        stats.(statNames{s}) = 0/0;
+    end
     
 end
+
+%% --- end function -------------------------------------------------------
