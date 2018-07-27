@@ -11,7 +11,7 @@ exType = 'rs';
 
 % which models to use?
 Mnames = [{'ANN'},{'GPR'},{'TBG'},{'RNN'}];
-Mswitch = [1,1,1,0];
+Mswitch = [1,1,1,1];
 Nmodels = length(Mnames);
 
 % number of validation partitions
