@@ -34,24 +34,54 @@ mdex = mdex+1;
 if Mswitch(mdex)
     fprintf('Sensitivity on: ANN ...'); tic;
     for s = 1:Ns
+
+        % sepatate training/test data
+        Xsite = Xdata(:,:,s);
+        
         for k = 1:kfold
-            Xsk = Xdata(Itst(:,k),:,s);
-            Ysk = Ydata(Itst(:,k),s);
-            Zsk = ann{s,k}(Xsk');
-            statsA = calcStats(Ysk,Zsk,Bw);
+            
+            ann{s,k} = ...
+                trainANN(Xsite(Itrn(:,k),:),Ysite(Itrn(:,k)),ANNtrainParms);
+            Ztst = ann{s,k}(Xsite(Itst(:,k),:)');
+            Ytst = Ydata(Itst(:,k),s);
+            statsA = calcStats(Ytst,Ztst,Bw);
+            
             for x = 1:Nx
-                Xtemp = Xsk;
-                Xtemp(:,x) = mean(Xtemp(:,x));
-                Zsk = ann{s,k}(Xtemp');
-                statsX(x) = calcStats(Ysk,Zsk,Bw);
-                sens(:,k,s,mdex) = ...
-                    (statsA.Correlation - statsX(x).Correlation) ./ ...
-                    statsA.Correlation;
-                norm(:,k,s,mdex) = ...
-                    sens(:,k,s,mdex) ./ sum(sens(:,k,s,mdex));
+                xdex = 1:Nx; xdex(x) = [];     
+                annX{s,k,x} = ...
+                    trainANN(Xsite(Itrn(:,k),xdex),Ysite(Itrn(:,k)),ANNtrainParms);
+                Ztst = annX{s,k,x}(Xsite(Itst(:,k),:)');
+                Ytst = Ydata(Itst(:,k),s);
+                statsA(x) = calcStats(Ytst,Ztst,Bw);
             end % x-loop
-            clear Zsk Ysk statsA statsX
+            
+            sens(:,k,s,mdex) = ...
+                (statsA.Correlation - statsX(x).Correlation) ./ ...
+                statsA.Correlation;
+            norm(:,k,s,mdex) = ...
+                sens(:,k,s,mdex) ./ sum(sens(:,k,s,mdex));
+            
         end % k-loop
+
+%         for k = 1:kfold
+%             Xsk = Xdata(Itst(:,k),:,s);
+%             Ysk = Ydata(Itst(:,k),s);
+%             Zsk = ann{s,k}(Xsk');
+%             statsA = calcStats(Ysk,Zsk,Bw);
+%             for x = 1:Nx
+%                 Xtemp = Xsk;
+%                 Xtemp(:,x) = mean(Xtemp(:,x));
+%                 Zsk = ann{s,k}(Xtemp');
+%                 statsX(x) = calcStats(Ysk,Zsk,Bw);
+%                 sens(:,k,s,mdex) = ...
+%                     (statsA.Correlation - statsX(x).Correlation) ./ ...
+%                     statsA.Correlation;
+%                 norm(:,k,s,mdex) = ...
+%                     sens(:,k,s,mdex) ./ sum(sens(:,k,s,mdex));
+%             end % x-loop
+%             clear Zsk Ysk statsA statsX
+%         end % k-loop
+
     end % s-loop
     fprintf('. finished; time = %f \n',toc);
 end % use this model?
@@ -64,30 +94,30 @@ mdex = mdex+1;
 if Mswitch(mdex)
     fprintf('Sensitivity on: GPR ...'); tic;
     for s = 1:Ns
-%         for k = 1:kfold
-%             sens(:,k,s,mdex) = 1./...
-%                 gpr{s,k}.RegressionGP.KernelInformation.KernelParameters(1:end-1,1);
-%             norm(:,k,s,mdex) = ...
-%                 sens(:,k,s,mdex) ./ sum(sens(:,k,s,mdex));
-%         end % k-loop
         for k = 1:kfold
-            Xsk = Xdata(Itst(:,k),:,s);
-            Ysk = Ydata(Itst(:,k),s);
-            Zsk = ann{s,k}(Xsk');
-            statsA = calcStats(Ysk,Zsk,Bw);
-            for x = 1:Nx
-                Xtemp = Xsk;
-                Xtemp(:,x) = mean(Xtemp(:,x));
-                Zsk = predict(gpr{s,k}.RegressionGP,Xtemp);
-                statsX(x) = calcStats(Ysk,Zsk,Bw);
-                sens(:,k,s,mdex) = ...
-                    (statsA.Correlation - statsX(x).Correlation) ./ ...
-                    statsA.Correlation;
-                norm(:,k,s,mdex) = ...
-                    sens(:,k,s,mdex) ./ sum(sens(:,k,s,mdex));
-            end % x-loop
-            clear Zsk Ysk statsA statsX
+            sens(:,k,s,mdex) = 1./...
+                gpr{s,k}.RegressionGP.KernelInformation.KernelParameters(1:end-1,1);
+            norm(:,k,s,mdex) = ...
+                sens(:,k,s,mdex) ./ sum(sens(:,k,s,mdex));
         end % k-loop
+%         for k = 1:kfold
+%             Xsk = Xdata(Itst(:,k),:,s);
+%             Ysk = Ydata(Itst(:,k),s);
+%             Zsk = ann{s,k}(Xsk');
+%             statsA = calcStats(Ysk,Zsk,Bw);
+%             for x = 1:Nx
+%                 Xtemp = Xsk;
+%                 Xtemp(:,x) = mean(Xtemp(:,x));
+%                 Zsk = predict(gpr{s,k}.RegressionGP,Xtemp);
+%                 statsX(x) = calcStats(Ysk,Zsk,Bw);
+%                 sens(:,k,s,mdex) = ...
+%                     (statsA.Correlation - statsX(x).Correlation) ./ ...
+%                     statsA.Correlation;
+%                 norm(:,k,s,mdex) = ...
+%                     sens(:,k,s,mdex) ./ sum(sens(:,k,s,mdex));
+%             end % x-loop
+%             clear Zsk Ysk statsA statsX
+%         end % k-loop
     end % s-loop
     fprintf('. finished; time = %f \n',toc);
 end % use this model?
@@ -100,36 +130,42 @@ mdex = mdex+1;
 if Mswitch(mdex)
     fprintf('Sensitivity on: TBG ...'); tic;
     for s = 1:Ns
-%         for k = 1:kfold
-%             sens(:,k,s,mdex) = ...
-%                 oobPermutedPredictorImportance(tbg{s,k}.RegressionEnsemble);
-%             norm(:,k,s,mdex) = ...
-%                 sens(:,k,s,mdex) ./ sum(sens(:,k,s,mdex));
-%         end % k-loop
         for k = 1:kfold
-            Xsk = Xdata(Itst(:,k),:,s);
-            Ysk = Ydata(Itst(:,k),s);
-            Zsk = ann{s,k}(Xsk');
-            statsA = calcStats(Ysk,Zsk,Bw);
-            for x = 1:Nx
-                Xtemp = Xsk;
-                Xtemp(:,x) = mean(Xtemp(:,x));
-                Zsk = predict(tbg{s,k}.RegressionEnsemble,Xtemp);
-                statsX(x) = calcStats(Ysk,Zsk,Bw);
-                sens(:,k,s,mdex) = ...
-                    (statsA.Correlation - statsX(x).Correlation) ./ ...
-                    statsA.Correlation;
-                norm(:,k,s,mdex) = ...
-                    sens(:,k,s,mdex) ./ sum(sens(:,k,s,mdex));
-            end % x-loop
-            clear Zsk Ysk statsA statsX
+            sens(:,k,s,mdex) = ...
+                oobPermutedPredictorImportance(tbg{s,k}.RegressionEnsemble);
+            norm(:,k,s,mdex) = ...
+                sens(:,k,s,mdex) ./ sum(sens(:,k,s,mdex));
         end % k-loop
+%         for k = 1:kfold
+%             Xsk = Xdata(Itst(:,k),:,s);
+%             Ysk = Ydata(Itst(:,k),s);
+%             Zsk = ann{s,k}(Xsk');
+%             statsA = calcStats(Ysk,Zsk,Bw);
+%             for x = 1:Nx
+%                 Xtemp = Xsk;
+%                 Xtemp(:,x) = mean(Xtemp(:,x));
+%                 Zsk = predict(tbg{s,k}.RegressionEnsemble,Xtemp);
+%                 statsX(x) = calcStats(Ysk,Zsk,Bw);
+%                 sens(:,k,s,mdex) = ...
+%                     (statsA.Correlation - statsX(x).Correlation) ./ ...
+%                     statsA.Correlation;
+%                 norm(:,k,s,mdex) = ...
+%                     sens(:,k,s,mdex) ./ sum(sens(:,k,s,mdex));
+%             end % x-loop
+%             clear Zsk Ysk statsA statsX
+%         end % k-loop
     end % s-loop
     fprintf('. finished; time = %f \n',toc);
 end % use this model?
 
 % fractions of variances from parameters, sites, kfold
 [tsi(:,mdex),fsi(:,mdex),isi(:,mdex)] = sobol3way(sens(:,:,:,mdex));
+
+%% --- Save Results -------------------------------------------------------
+
+% save progress
+fname = strcat('./results/site_sensitivity_',exType,'.mat');
+save(fname,'-v7.3');
 
 %% --- Plot Sensitivity Indexes -------------------------------------------
 
