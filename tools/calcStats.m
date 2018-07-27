@@ -1,4 +1,4 @@
-function stats = calcStats_alt(O,M,Bw)
+function stats = calcStats(O,M,Bw)
 
 %% --- prepare data -------------------------------------------------------
 
@@ -39,6 +39,16 @@ stats.CoD = stats.Correlation.^2;
 
 % mutual information
 stats.Information = mutual_info_ratio(O,M,Bw);
+
+%% --- error statistics ---------------------------------------------------
+
+% root mean squared error
+stats.RMSE = sqrt(mean((O-M).^2));
+
+% root error variance
+[~,~,r] = regress(O,[ones(length(M),1),M]);
+stats.sigma2 = var(r);
+stats.sigma2_norm = var(r)/var(O);
 
 %% --- ad hoc statistics --------------------------------------------------
 
