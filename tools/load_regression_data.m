@@ -8,9 +8,9 @@ if strcmpi(exType,'rs')     % remote sensing data
     Ydata = quarterMonGlobals(:,1,:);     % regression targets
     Vnames(1) = [];                       % remove NEE from variable names
 elseif strcmpi(exType,'fn') % fluxnet data
-    load('Xdata.mat');                    % regression inputs
-    load('Ydata.mat');                    % regression targets
-    load('Vnames.mat');                   % regression variable names
+    load('alldata_Xdata.mat');            % regression inputs
+    load('alldata_Ydata.mat');            % regression targets
+    load('alldata_Vnames.mat');           % regression variable names
     Xdata(:,[1,2],:) = [];                % remove dates from inputs
     Ydata(:,[1,2],:) = [];                % remove dates from targets
     Vnames([1,2]) = [];                   % remove dates from variable names
