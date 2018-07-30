@@ -6,13 +6,17 @@ restoredefaultpath; addpath(genpath(pwd));
 %% --- Experimnet Setup ---------------------------------------------------
 
 % experiment type
-exType = 'rs';
-% exType = 'fn';
+% exType = 'rs';
+exType = 'fn';
 
 % which models to use?
 Mnames = [{'ANN'},{'GPR'},{'TBG'},{'RNN'}];
-Mswitch = [1,1,1,0];
+Mswitch = [1,0,1,0];
 Nmodels = length(Mnames);
+
+% ancilary data flags
+useBudyko = 1;  % 0 = not used; 1 = as regressors 
+useIGBP = 1;    % 0 = not used; 1 = as regressors (from VEGTABLE.PRM); -1 = separate models
 
 % minimum and maximum number of data points per site
 if     strcmpi(exType,'rs')
@@ -37,7 +41,8 @@ fprintf('Loading data ...'); tic;
 
 % load the data - this is in a function call so that it is consistent
 % across all regression routines
-[Xdata,Ydata,Vnames] = load_regression_data(exType,Nmin,Mswitch(4));
+[Xdata,Ydata,Vnames] = ...
+    load_regression_data(exType,Nmin,Mswitch(4),useBudyko,useIGBP);
 
 % dimensions
 [Nt,Nx,Ns] = size(Xdata);
@@ -54,6 +59,9 @@ By = linspace(Bmin,Bmax,Nbins);
 Bw = By(2) - By(1);
 
 %% --- Leave-One-Out Models -----------------------------------------------
+
+% start large timer
+tstart = tic;
 
 % init storage
 Zobs = zeros(Nt,Ns)./0; % observation data
@@ -142,9 +150,11 @@ for s = 1:Ns
     stats(s).rnn = calcStats(Zobs(:,s),Zrnn(:,s),Bw);
 
     % save progress
-    if rem(s,5) == 0
+    if rem(s,10) == 0
+        fprintf('Saving progress ...'); tic;
         fname = strcat('./progress/',exType,'_loo_',num2str(s),'.mat');
         save(fname,'-v7.3');
+        fprintf('. finished; time = %f \n',toc);
     end
     
     % screen splitting
@@ -154,17 +164,41 @@ end % s-loop
 
 %% --- Global Statistics --------------------------------------------------
 
+% screen report
+fprintf('Calculating global stats ...'); tic;
+
 % site-regression global stats
 globalStats.ann = calcStats(Zobs(:),Zann(:),Bw);
 globalStats.gpr = calcStats(Zobs(:),Zgpr(:),Bw);
 globalStats.tbg = calcStats(Zobs(:),Ztbg(:),Bw);
 globalStats.rnn = calcStats(Zobs(:),Zrnn(:),Bw);
 
+% screen report
+fprintf('. finished; time = %f \n',toc);
+
+% screen splitting
+fprintf(strcat('\n',repmat('-',[1,60]),'\n\n'));
+
 %% --- Save Results -------------------------------------------------------
+
+% screen report
+fprintf('Saving final results ...'); tic;
 
 % save progress
 fname = strcat('./results/loo_regressions_',exType,'.mat');
 save(fname,'-v7.3');
+
+% screen report
+fprintf('. finished; time = %f \n',toc);
+
+% screen splitting
+fprintf(strcat('\n',repmat('-',[1,60]),'\n\n'));
+
+% final screen report
+fprintf('\nTotal run time = %f[s]\n\n)',toc(tstart));
+
+% screen splitting
+fprintf(strcat('\n',repmat('-',[1,60]),'\n\n'));
 
 %% --- Plot Local Stats ---------------------------------------------------
 

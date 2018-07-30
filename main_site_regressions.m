@@ -7,15 +7,15 @@ restoredefaultpath; addpath(genpath(pwd));
 
 % experiment type
 % exType = 'rs';
-% exType = 'fn';
+exType = 'fn';
+
+% number of validation partitions
+kfold = 4;
 
 % which models to use?
 Mnames = [{'ANN'},{'GPR'},{'TBG'},{'RNN'}];
 Mswitch = [1,1,1,0];
 Nmodels = length(Mnames);
-
-% number of validation partitions
-kfold = 4;
 
 % minimum and maximum number of data points per site
 if     strcmpi(exType,'rs')
@@ -38,9 +38,9 @@ Nbins = 30;
 % screen report
 fprintf('Loading data ...'); tic;
 
-% load the data - this is in a function call so that it is consistent
-% across all regression routines
-[Xdata,Ydata,Vnames] = load_regression_data(exType,Nmin,Mswitch(4));
+% load the data
+[Xdata,Ydata,Vnames] = ...
+    load_regression_data(exType,Nmin,Mswitch(4),0,0);
 
 % dimensions
 [Nt,Nx,Ns] = size(Xdata);
@@ -57,6 +57,9 @@ By = linspace(Bmin,Bmax,Nbins);
 Bw = By(2) - By(1);
 
 %% --- Site-Specific Models -----------------------------------------------
+
+% start large timer
+tstart = tic;
 
 % init storage
 Zobs = zeros(Nt,Ns)./0; % observation data
@@ -180,8 +183,10 @@ for s = 1:Ns
     
     % save progress
     if rem(s,10) == 0
+        fprintf('Saving progress ...'); tic;
         fname = strcat('./progress/',exType,'_site_',num2str(s),'.mat');
         save(fname,'-v7.3');
+        fprintf('. finished; time = %f \n',toc);
     end
     
     % screen splitting
@@ -191,17 +196,41 @@ end % s-loop
 
 %% --- Global Statistics --------------------------------------------------
 
+% screen report
+fprintf('Calculating global stats ...'); tic;
+
 % site-regression global stats
 globalStats.ann = calcStats(Zobs(:),Zann(:),Bw);
 globalStats.gpr = calcStats(Zobs(:),Zgpr(:),Bw);
 globalStats.tbg = calcStats(Zobs(:),Ztbg(:),Bw);
 globalStats.rnn = calcStats(Zobs(:),Zrnn(:),Bw);
 
+% screen report
+fprintf('. finished; time = %f \n',toc);
+
+% screen splitting
+fprintf(strcat('\n',repmat('-',[1,60]),'\n\n'));
+
 %% --- Save Results -------------------------------------------------------
+
+% screen report
+fprintf('Saving final results ...'); tic;
 
 % save progress
 fname = strcat('./results/site_regressions_',exType,'.mat');
 save(fname,'-v7.3');
+
+% screen report
+fprintf('. finished; time = %f \n',toc);
+
+% screen splitting
+fprintf(strcat('\n',repmat('-',[1,60]),'\n\n'));
+
+% final screen report
+fprintf('\nTotal run time = %f[s]\n\n)',toc(tstart));
+
+% screen splitting
+fprintf(strcat('\n',repmat('-',[1,60]),'\n\n'));
 
 %% --- Plot Local Stats ---------------------------------------------------
 
