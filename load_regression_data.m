@@ -6,7 +6,7 @@ if strcmpi(exType,'rs')     % remote sensing data
     load('quarterMonGlobalsVnames.mat');  % remote sensing variable names
     Xdata = quarterMonGlobals(:,2:end,:); % regression inputs
     Ydata = quarterMonGlobals(:,1,:);     % regression targets
-    Vnames(1) = [];                       % remove NEE from variable names
+%     Vnames(1) = [];                       % remove NEE from variable names
 elseif strcmpi(exType,'fn') % fluxnet data
     load('allflux_Xdata.mat');            % regression inputs
     load('allflux_Ydata.mat');            % regression targets
