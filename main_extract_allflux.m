@@ -1,15 +1,15 @@
 %% --- Runtime Environment ------------------------------------------------
 
 clear all; close all; clc;
-restoredefaultpath; addpath(genpath(pwd))
-addpath('../../tools/');
+restoredefaultpath; 
+addpath(genpath(pwd))
 
 %% --- Runtime Parameters -------------------------------------------------
 
 % data directories
-Adir = './ameriflux_half_hourly';
-Fdir = './fluxnet_daily';
-Odir = './extracted/';
+Adir = './data/in_situ/ameriflux_half_hourly';
+Fdir = './data/in_situ/fluxnet_daily';
+Odir = './data/in_situ/extracted/';
 
 % outgoing variable names
 Xnames = [{'Year'},{'DOY'},{'Precip'},{'Air Temp'},{'Air Pressure'}, ...
@@ -101,7 +101,6 @@ save(strcat(Odir,'allflux_Vnames.mat') ,'Vnames');
 save(strcat(Odir,'allflux_LatLon.mat') ,'LatLon');
 save(strcat(Odir,'allflux_IGBP.mat')   ,'IGBP');
 save(strcat(Odir,'allflux_Network.mat'),'Network');
-% save(strcat(Odir,'allflux_Budyko.mat') ,'Budyko');
 
 % screen report
 fprintf('. finished; time = %f. \n',toc);

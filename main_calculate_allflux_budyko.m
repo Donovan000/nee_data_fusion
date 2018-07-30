@@ -2,7 +2,7 @@
 
 clear all; close all; clc;
 restoredefaultpath; 
-addpath(genpath('.'))
+addpath(genpath(pwd))
 
 %% --- Load All of the FluxNet and AmeriFlux Data -------------------------
 
@@ -30,7 +30,7 @@ end
 %% --- Save Results -------------------------------------------------------
 
 % output directory
-Odir = 'extracted/';
+Odir = './data/in_situ/extracted/';
 
 % file name
 fname = strcat(Odir,'allflux_Budyko.mat');
