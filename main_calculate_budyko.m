@@ -67,15 +67,15 @@ h3 = plot(Xtp,Ytp,'k--','linewidth',3);
 
 % plot site data
 h4 = plot(di(1:209),ef(1:209),'ro','linewidth',3);
-h4 = plot(di(210:end),ef(210:end),'bo','linewidth',3);
+h5 = plot(di(210:end),ef(210:end),'bo','linewidth',3);
 
 % aesthetics
 grid on
 axis([0,8,0,4]);
-xlabel('Dryness Index (E_p/P)','fontsize',20);
-ylabel('Evaporative Fraction (E_a/P)','fontsize',20);
+xlabel('Dryness Index (Ep/P)','fontsize',20);
+ylabel('Evaporative Fraction (Ea/P)','fontsize',20);
 title('Budyko Analysis of Flux Tower Sites','fontsize',22);
-legend([h1,h3,h4],'Budyko','Turc-Pike','Flux Sites');
+legend([h1,h3,h4,h5],'Budyko','Turc-Pike','AmeriFlux','FluxNet','location','nw');
 set(gca,'fontsize',16);
 
 % save figure

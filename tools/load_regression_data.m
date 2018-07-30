@@ -1,5 +1,5 @@
-function [Xdata,Ydata,Vnames,IGBP,Budyko] = ...
-    load_regression_data(exType,Nmin,isConsecutive)
+function [Xdata,Ydata,Vnames] = ...
+    load_regression_data(exType,Nmin,isConsecutive,useBudyko,useIGBP)
 
 % load data depending on experiment type
 if strcmpi(exType,'rs')     % remote sensing data
@@ -18,10 +18,6 @@ else
     fprintf('Experiment type (%s) not recognized',exType);
     error('');
 end
-
-% load ancilary data
-Budyko = load('allflux_budyko.txt');        % budyko indexes
-load('allflux_IGBP.txt');                   % veg classifications
 
 % dimensions
 Ns = size(Xdata,3);
@@ -86,10 +82,56 @@ Ydata(Nmin+1:end,:,:) = [];
 % remove sites without sufficient data
 Xdata(:,:,isnan(Is)) = [];
 Ydata(:,:,isnan(Is)) = [];
-Budyko(isnan(Is),:)  = [];
-IGBP(isnan(Is))    = [];
 
 % check for any stragglers
 assert(all(~isnan(Xdata(:))))
 assert(all(~isnan(Ydata(:))))
-assert(all(~isnan(Budyko(:))))
+
+% concatenate ancillary regressors
+if useBudyko == 1
+    
+    % load budyko indexes
+    Budyko = load('allflux_budyko.txt');    
+    Budyko(isnan(Is),:)  = [];
+    assert(all(~isnan(Budyko(:))));
+    
+    % change varaible names
+    Vnames = [Vnames(:)',{'Dryness Index'},{'Evaporative Frac'}];
+
+    % add to predictor data vectors
+    Xdata = cat(2,Xdata,repmat(permute(Budyko,[3,2,1]),[Nmin,1,1]));
+end
+
+if useIGBP == 1
+    
+    % load veg classification
+    metaTable = readtable('allflux_metadata.txt');    % all metadata
+    IGBP = metaTable{:,4};                            % igbp classificaiton
+    IGBP(isnan(Is)) = [];
+    
+    % load the vegtype names
+    parmTable = readtable('vegparm.csv');
+    vegTypes = parmTable{:,1};
+    
+    % load the principle components of veg parm table
+    load('igbp_pca.txt');
+    
+    % extract raw numeric data
+    Ns = size(Xdata,3);
+    vegParms = zeros(Ns,5)./0;
+    for s = 1:Ns
+        v = find(strcmpi(vegTypes,IGBP{s}));
+        vegParms(s,:) = igbp_pca(v,1:5);
+    end
+    assert(all(~isnan(vegParms(:))));
+    
+    % change varaible names
+    Vnames = [Vnames(:)',{'IGBP PCA-1'},{'IGBP PCA-2'},{'IGBP PCA-3'}];
+
+    % add to predictor data vectors
+    Xdata = cat(2,Xdata,repmat(permute(vegParms,[3,2,1]),[Nmin,1,1]));
+    
+end
+
+
+
