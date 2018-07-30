@@ -10,6 +10,9 @@ addpath(genpath(pwd))
 load('allflux_Xdata.mat');
 Xdata(:,1:2,:) = [];
 
+% load network markers
+load('allflux_Network.mat');
+
 % % load the data
 % [Xdata,~,~] = load_regression_data('fn',2*365,1);
 
@@ -24,7 +27,9 @@ ef = zeros(Ns,1)./0;
 
 % loop through sites
 for s = 1:Ns
-    [di(s),ef(s)] = budyko(Xdata(:,:,s));
+    if strcmpi(Network{s},'fluxnet')
+        [di(s),ef(s)] = budyko(Xdata(:,:,s));
+    end
 end
 
 %% --- Save Results -------------------------------------------------------
@@ -66,7 +71,7 @@ h4 = plot(di,ef,'o','linewidth',3);
 
 % aesthetics
 grid on
-axis([0,5,0,2.2]);
+% axis([0,5,0,2.2]);
 xlabel('Dryness Index (E_p/P)','fontsize',20);
 ylabel('Evaporative Fraction (E_a/P)','fontsize',20);
 title('Budyko Analysis of Flux Tower Sites','fontsize',22);
