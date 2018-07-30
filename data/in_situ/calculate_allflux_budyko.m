@@ -6,12 +6,12 @@ addpath(genpath('../../'))
 
 %% --- Load All of the FluxNet and AmeriFlux Data -------------------------
 
-% % load the data
-% load('allflux_Xdata.mat');
-% Xdata(:,1:2,:) = [];
-
 % load the data
-[Xdata,~,~] = load_regression_data('fn',2*365,1);
+load('allflux_Xdata.mat');
+Xdata(:,1:2,:) = [];
+
+% % load the data
+% [Xdata,~,~] = load_regression_data('fn',2*365,1);
 
 % dimensions
 [Nt,Nx,Ns] = size(Xdata);
@@ -30,10 +30,10 @@ end
 %% --- Save Results -------------------------------------------------------
 
 % output directory
-Odir = './extracted/';
+Odir = 'extracted/';
 
 % file name
-fname = strcat(Odir,'allflux_Network.mat');
+fname = strcat(Odir,'allflux_Budyko.mat');
 
 % creat output structure
 Budyko = [ef,di];
@@ -72,6 +72,10 @@ ylabel('Evaporative Fraction (E_a/P)','fontsize',20);
 title('Budyko Analysis of Flux Tower Sites','fontsize',22);
 legend([h1,h3,h4],'Budyko','Turc-Pike','Flux Sites');
 set(gca,'fontsize',16);
+
+% save figure
+fname = strcat('./figures/all_budyko.png');
+saveas(fig,fname);
 
 %% --- END SCRIPT ---------------------------------------------------------
 
