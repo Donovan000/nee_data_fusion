@@ -62,11 +62,10 @@ for f = 1:Nf; tic;
             continue
         end
     end
-    
+        
     % load data from file and store in cell array
     fname = strcat(fileList(f).folder,'/',fileList(f).name);
     Xdata = read_allflux_csv(fname);
-    %assert(size(Xdata,2) == Nin);
     
     datestr = num2str(Xdata(:,1));
     yearstr = datestr(:,1:4); yearcol  = str2num(yearstr);
@@ -84,12 +83,14 @@ for f = 1:Nf; tic;
             daily_averages(t,1,f) = Yr(y);
             daily_averages(t,2,f) = d;
             if ~isempty(Id)
-                daily_averages(t,3,f) = nansum(Xdata(Iy(Im(Id)),2)); % precip
+                if any(~isnan(Xdata(Iy(Im(Id)),2)))
+                    daily_averages(t,3,f) = nansum(Xdata(Iy(Im(Id)),2)); % precip
+                end
                 daily_averages(t,4:end,f) = nanmean(Xdata(Iy(Im(Id)),3:end),1);
             end
         end
     end
-      
+          
     % get metadata (lat/lon, igpb)
     [LatLon(:,f),IGBP{f}] = read_metadata(Snames{f},Network{f});
     
