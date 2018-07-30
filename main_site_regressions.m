@@ -9,13 +9,16 @@ restoredefaultpath; addpath(genpath(pwd));
 % exType = 'rs';
 exType = 'fn';
 
+% frequancy for saving progress
+Fsave = 1e3;
+
 % number of validation partitions
 kfold = 4;
 
 % which models to use?
 Mnames = [{'ANN'},{'GPR'},{'TBG'},{'RNN'}];
-Mswitch = [1,1,1,0];
-Nmodels = length(Mnames);
+Mswitch = [1,0,1,0];
+Nm = length(Mnames);
 
 % minimum and maximum number of data points per site
 if     strcmpi(exType,'rs')
@@ -62,11 +65,8 @@ Bw = By(2) - By(1);
 tstart = tic;
 
 % init storage
-Zobs = zeros(Nt,Ns)./0; % observation data
-Zann = zeros(Nt,Ns)./0; % ann predictions
-Zgpr = zeros(Nt,Ns)./0; % gpr predictions
-Ztbg = zeros(Nt,Ns)./0; % tbg predictions
-Zrnn = zeros(Nt,Ns)./0; % rnn predictions
+Zobs = zeros(Nt,Ns)./0;         % observation data
+Zreg = zeros(Nt,Ns,Nm)./0; % regression predictions
 
 % screen splitting
 fprintf(strcat('\n',repmat('-',[1,60]),'\n\n'));
@@ -97,41 +97,41 @@ for s = 1:Ns
     Zobs(:,s) = Ysite;
     assert(isempty(find(isnan(Zobs(:,s)),1)));
 
-    % start
-    mdex = 0;
+    % initialize model index
+    m = 0;
         
     % -------------------
     % k-fold validation for ann
-    mdex = mdex+1; 
-    if Mswitch(mdex)
+    m = m+1; 
+    if Mswitch(m)
         fprintf('Site %d/%d - ANN ...',s,Ns); tic;
         for k = 1:kfold
             ann{s,k} = trainANN(Xsite(Itrn(:,k),:),Ysite(Itrn(:,k)),ANNtrainParms);
-            Zann(Itst(:,k),s) = ann{s,k}(Xsite(Itst(:,k),:)');
+            Zreg(Itst(:,k),s,m) = ann{s,k}(Xsite(Itst(:,k),:)');
         end % k-loop
         fprintf('. finished; time = %f \n',toc);
     end % use this model?
     
     % -------------------
     % k-fold validation for gpr
-    mdex = mdex+1; 
-    if Mswitch(mdex)
+    m = m+1; 
+    if Mswitch(m)
         fprintf('Site %d/%d - GPR ...',s,Ns); tic;
         for k = 1:kfold
             gpr{s,k} = trainGPR(Xsite(Itrn(:,k),:),Ysite(Itrn(:,k)),GPRtrainParms);
-            Zgpr(Itst(:,k),s) = predict(gpr{s,k}.RegressionGP,Xsite(Itst(:,k),:));
+            Zreg(Itst(:,k),s,m) = predict(gpr{s,k}.RegressionGP,Xsite(Itst(:,k),:));
         end % k-loop
         fprintf('. finished; time = %f \n',toc);
     end % use this model?
     
     % -------------------
     % k-fold validation for bagger
-    mdex = mdex+1; 
-    if Mswitch(mdex)
+    m = m+1; 
+    if Mswitch(m)
         fprintf('Site %d/%d - TBG ...',s,Ns); tic;
         for k = 1:kfold
             tbg{s,k} = trainTBG(Xsite(Itrn(:,k),:),Ysite(Itrn(:,k)),TBGtrainParms);
-            Ztbg(Itst(:,k),s) = ...
+            Zreg(Itst(:,k),s,m) = ...
                 predict(tbg{s,k}.RegressionEnsemble,Xsite(Itst(:,k),:));
         end % k-loop
         fprintf('. finished; time = %f \n',toc);
@@ -139,8 +139,8 @@ for s = 1:Ns
     
     % -------------------
     % k-fold validation for lstm
-    mdex = mdex+1; 
-    if Mswitch(mdex)
+    m = m+1; 
+    if Mswitch(m)
         fprintf('Site %d/%d - RNN ...',s,Ns); tic;
         edex = 0;
         for k = 1:kfold
@@ -168,23 +168,24 @@ for s = 1:Ns
             [rnn{s,k},mu,sg] = trainLSTM(Xtrn,Ytrn,LSTMtrainParms);
             Xtst{1} = (Xtst{1}-mu)./sg;
             ztemp = predict(rnn{s,k},Xtst,'MiniBatchSize',1);
-            Zrnn(sdex:edex,s) = ztemp{1};
+            Zreg(sdex:edex,s,m) = ztemp{1};
             
         end % k-fold
+        
+        % calculate statistics
+        
         fprintf('. finished; time = %f \n',toc);
     end % use this model?
-    
-    
+       
     % calculate test statistics
-    stats(s).ann = calcStats(Zobs(:,s),Zann(:,s),Bw);
-    stats(s).gpr = calcStats(Zobs(:,s),Zgpr(:,s),Bw);
-    stats(s).tbg = calcStats(Zobs(:,s),Ztbg(:,s),Bw);
-    stats(s).rnn = calcStats(Zobs(:,s),Zrnn(:,s),Bw);
+    for m = find(Mswitch)
+        stats(s,m) = calcStats(Zobs(:,s),Zreg(:,s,m),Bw);
+    end % m-loop
     
     % save progress
-    if rem(s,10) == 0
+    if rem(s,Fsave) == 0
         fprintf('Saving progress ...'); tic;
-        fname = strcat('./progress/',exType,'_site_',num2str(s),'.mat');
+        fname = strcat('./progress/site_regs_',num2str(s),exType,'.mat');
         save(fname,'-v7.3');
         fprintf('. finished; time = %f \n',toc);
     end
@@ -199,11 +200,11 @@ end % s-loop
 % screen report
 fprintf('Calculating global stats ...'); tic;
 
-% site-regression global stats
-globalStats.ann = calcStats(Zobs(:),Zann(:),Bw);
-globalStats.gpr = calcStats(Zobs(:),Zgpr(:),Bw);
-globalStats.tbg = calcStats(Zobs(:),Ztbg(:),Bw);
-globalStats.rnn = calcStats(Zobs(:),Zrnn(:),Bw);
+% global stats
+for m = find(Mswitch)
+    regData = Zreg(:,:,m);
+    globalStats(m) = calcStats(Zobs(:),regData(:),Bw);
+end % m-loop
 
 % screen report
 fprintf('. finished; time = %f \n',toc);
@@ -232,128 +233,53 @@ fprintf('\nTotal run time = %f[s]\n\n)',toc(tstart));
 % screen splitting
 fprintf(strcat('\n',repmat('-',[1,60]),'\n\n'));
 
-%% --- Plot Local Stats ---------------------------------------------------
-
-% get number of statistics
-statNames = fieldnames(globalStats.ann);
-Nstats = numel(statNames);
-
-% model names
-Unames = Mnames(Mswitch == 1);
-
-% which stats to plot
-% Istats = [4,5,9,10,13];
-Istats = [2:6,7,9];
-
-% figure 1: compare different ML methods
-fignum = 1; figure(fignum); close(fignum); figure(fignum);
-set(gcf,'color','w');
-set(gcf,'position',[484   379   1100   450*sum(Mswitch)])
-
-% create plot vectors
-plotData = zeros(Nstats,Ns,Nmodels);
-for s = 1:Nstats
-    for ss = 1:Ns
-        plotData(s,ss,1) = stats(ss).ann.(statNames{s});
-        plotData(s,ss,2) = stats(ss).gpr.(statNames{s});
-        plotData(s,ss,3) = stats(ss).tbg.(statNames{s});
-        plotData(s,ss,4) = stats(ss).rnn.(statNames{s});
-    end % s-loop
-end % ss-loop
-plotData(:,:,Mswitch==0) = [];
-
-% plot global stats from local models
-for m = 1:size(plotData,3)
-    subplot(size(plotData,3),1,m)
-    violin(squeeze(plotData(Istats,:,m))'); hold on;
-    
-    % aesthetics
-    plot([0,100],[0,0],'k-','linewidth',1);
-    set(gca,'ylim',[-0.8,1]);
-    set(gca,'xlim',[0.5,length(Istats)+0.5]);
-    ylim = get(gca,'ylim');
-    plot([5.5,5.5],ylim,'k-','linewidth',4);
-    set(gca,'fontsize',18)
-    grid on;
-    
-    % labels
-    text(2.7,-0.5,'Distributional Statistics','fontsize',26)
-    text(6.0,-0.4,'Pairwise','fontsize',26)
-    text(6.0,-0.55,'Statistics','fontsize',26)
-    set(gca,'xticklabel',statNames(Istats));
-    title(strcat({'Local (k-fold) '},Unames(m)),'fontsize',22);
-end % m-loop
-
-% save figure
-fname = strcat('./figures/site_regressions_violin_',exType,'.png');
-saveas(fignum,fname);
-
 %% --- Plot Global Stats --------------------------------------------------
 
 % get number of statistics
-statNames = fieldnames(globalStats.ann);
+statNames = fieldnames(globalStats(Mswitch(1)));
 Nstats = numel(statNames);
 
 % which stats to plot
-% Istats = [4,5,9,10,13];
-Istats = [2:6,7,9];
+Istats = [2:6,7,9,12];
 
 % figure 1: compare different ML methods
-fignum = 2; figure(fignum); close(fignum); figure(fignum);
+fig = 1; 
+figure(fig); close(fig); figure(fig);
 set(gcf,'color','w');
 set(gcf,'position',[484   379   1100   450])
 
 % create plot vectors
-plotData = zeros(Nstats,Nmodels);
+globalPlotData = zeros(Nstats,Nm);
 for s = 1:Nstats
-    plotData(s,1) = globalStats.ann.(statNames{s});
-    plotData(s,2) = globalStats.gpr.(statNames{s});
-    plotData(s,3) = globalStats.tbg.(statNames{s});
-    plotData(s,4) = globalStats.rnn.(statNames{s});
+    for m = find(Mswitch)
+        globalPlotData(s,m) = globalStats(m).(statNames{s});
+    end % m-loop
 end % s-loop
 
 % plot global stats from local models
-h = bar(plotData(Istats,Mswitch==1));
+h = bar(globalPlotData(Istats,Mswitch==1));
 hold on;
-
-% % create plot vectors
-% plotData = zeros(Nstats,Ns,Nmodels);
-% for s = 1:Nstats
-%     for ss = 1:Ns
-%         plotData(s,ss,1) = stats(ss).ann.(statNames{s});
-%         plotData(s,ss,2) = stats(ss).gpr.(statNames{s});
-%         plotData(s,ss,3) = stats(ss).tbg.(statNames{s});
-%         plotData(s,ss,4) = stats(ss).rnn.(statNames{s});
-%     end % s-loop
-% end % ss-loop
-% plotData(:,:,Mswitch==0) = [];
-% 
-% % plot global stats from local models
-% for m = 1:size(plotData,3)
-%     xloc = h(m).XData + h(m).XOffset;
-%     errorbar(xloc',globePlotData(Istats,m),...
-%         min(sitePlotData(Istats,:,m),[],2),...
-%         max(sitePlotData(Istats,:,m),[],2),'ok'); hold on;
-% end % m-loop
 
 % aesthetics
 set(gca,'ylim',[-0.8,1]);
 set(gca,'xlim',[0.5,length(Istats)+0.5]);
 ylim = get(gca,'ylim');
 plot([5.5,5.5],ylim,'k-','linewidth',4);
+xtickangle(60)
 set(gca,'fontsize',18)
 grid on;
 
 % labels
-text(2.7,-0.5,'Distributional Statistics','fontsize',26)
-text(6.0,-0.4,'Pairwise','fontsize',26)
-text(6.0,-0.55,'Statistics','fontsize',26)
+text(2.5,-0.5,'Distributional Statistics','fontsize',26)
+text(6.0,-0.5,'Pairwise Statistics','fontsize',26)
+% text(6.0,-0.4,'Pairwise','fontsize',26)
+% text(6.0,-0.55,'Statistics','fontsize',26)
 legend(Mnames(Mswitch == 1),'location','nw');
 set(gca,'xticklabel',statNames(Istats));
-title('Local (k-fold) Models','fontsize',22);
+title('Site-Specific (K-Fold) Models','fontsize',22);
 
 % save figure
-fname = strcat('./figures/site_regressions_bar_',exType,'.png');
-saveas(fignum,fname);
+fname = strcat('./figures/site_regressions_global_stats_',exType,'.png');
+saveas(fig,fname);
 
 %% *** END SCRIPT *********************************************************

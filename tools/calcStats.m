@@ -47,8 +47,8 @@ stats.RMSE = sqrt(mean((O-M).^2));
 
 % root error variance
 [~,~,r] = regress(O,[ones(length(M),1),M]);
-stats.sigma2 = var(r);
-stats.sigma2_norm = var(r)/var(O);
+stats.Sigma2 = var(r);
+stats.Sigma = sqrt(var(r)/var(O));
 
 %% --- ad hoc statistics --------------------------------------------------
 
