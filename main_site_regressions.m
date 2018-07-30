@@ -228,7 +228,7 @@ fprintf('. finished; time = %f \n',toc);
 fprintf(strcat('\n',repmat('-',[1,60]),'\n\n'));
 
 % final screen report
-fprintf('\nTotal run time = %f[s]\n\n)',toc(tstart));
+fprintf('\nTotal run time = %f[s]\n\n',toc(tstart));
 
 % screen splitting
 fprintf(strcat('\n',repmat('-',[1,60]),'\n\n'));
