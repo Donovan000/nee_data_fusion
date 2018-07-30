@@ -74,9 +74,6 @@ for f = 1:Nfiles; tic;
     % get metadata (lat/lon, igpb)
     [LatLon(:,f),IGBP{f},Network{f}] = read_metadata(Snames{f});
     
-    % calculate budyko metrics
-    [di(f),ef(f)] = budyko(daily_averages(:,:,f)); 
-    
     % screen report
     fprintf('. finished; name = %s, time = %f \n',Snames{f},toc);
     
@@ -104,7 +101,7 @@ save(strcat(Odir,'allflux_Vnames.mat') ,'Vnames');
 save(strcat(Odir,'allflux_LatLon.mat') ,'LatLon');
 save(strcat(Odir,'allflux_IGBP.mat')   ,'IGBP');
 save(strcat(Odir,'allflux_Network.mat'),'Network');
-save(strcat(Odir,'allflux_Budyko.mat') ,'Budyko');
+% save(strcat(Odir,'allflux_Budyko.mat') ,'Budyko');
 
 % screen report
 fprintf('. finished; time = %f. \n',toc);
