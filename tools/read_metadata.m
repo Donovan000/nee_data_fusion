@@ -10,12 +10,12 @@ fid = fopen(fname);
 
 while ~feof(fid)
    tline = fgetl(fid);
-   tline = strsplit(tline,'.');
+   tline = strsplit(tline,',');
    if strcmpi(sname,tline{1})
        latlon(1) = str2num(tline{2});
        latlon(2) = str2num(tline{3});
-       igbp      = str2num(tline(4));
-       net       = str2num(tline(5));
+       igbp      = tline(4);
+       net       = tline(5);
    end
 end
 
