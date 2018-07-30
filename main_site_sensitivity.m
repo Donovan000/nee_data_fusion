@@ -176,7 +176,45 @@ end % m-loop
 
 %% --- Ancillary Correlations ---------------------------------------------
 
-% pull Budyko indexes
+% choose which sensitivity indexes to use
+sens = sens2; sens(:,:,:,2:3) = sens1(:,:,:,2:3);
+
+Xdata2 = Xdata;
+
+% load the data
+[~,~,~,Snames,Budyko] = ...
+    load_regression_data(exType,2*365+2,0);
+Xdata = Xdata2;
+
+% budyko indexes: init storage
+di = zeros(Ns,1)./0;
+ef = zeros(Ns,1)./0;
+
+% budyko indexes: calculate
+for s = 1:Ns
+    [di(s),ef(s)] = budyko(Xdata(:,:,s));
+end
+
+% correlations
+for m = find(Mswitch)
+    for x = 1:Nx
+        s = squeeze(mean(sens(x,:,:,m),2));
+        rho(m,x) = corr(di,s);
+    end
+end
+
+% plots
+close all;
+
+sp = 0;
+for m = find(Mswitch)
+    for x = 1:Nx
+        sp = sp+1;
+        subplot(sum(Mswitch),Nx,sp);
+        s = squeeze(mean(sens(x,:,:,m),2));
+        plot(di,s,'o');
+    end
+end
 
 
 %% --- Save Results -------------------------------------------------------

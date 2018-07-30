@@ -1,9 +1,12 @@
-function [Xdata,Ydata,Vnames] = load_regression_data(exType,Nmin,isConsecutive)
+function [Xdata,Ydata,Vnames,Snames,Budyko] = ...
+    load_regression_data(exType,Nmin,isConsecutive)
 
 % load data depending on experiment type
 if strcmpi(exType,'rs')     % remote sensing data
     load('quarterMonGlobals.mat');        % remote sensing inputs/outputs
     load('quarterMonGlobalsVnames.mat');  % remote sensing variable names
+    load('allflux_Budyko.mat');           % budyko indexes
+    load('allflux_Snames.mat');           % site names
     Xdata = quarterMonGlobals(:,2:end,:); % regression inputs
     Ydata = quarterMonGlobals(:,1,:);     % regression targets
 %     Vnames(1) = [];                       % remove NEE from variable names
@@ -11,6 +14,8 @@ elseif strcmpi(exType,'fn') % fluxnet data
     load('allflux_Xdata.mat');            % regression inputs
     load('allflux_Ydata.mat');            % regression targets
     load('allflux_Vnames.mat');           % regression variable names
+    load('allflux_Budyko.mat');           % budyko indexes
+    load('allflux_Snames.mat');           % site names
     Xdata(:,[1,2],:) = [];                % remove dates from inputs
     Vnames([1,2]) = [];                   % remove dates from variable names
 else
@@ -72,7 +77,6 @@ else % if ~isConsecutive
         
     end % s-loop
     
-    
 end % if isConsecutive
 
 % remove unused data
@@ -82,7 +86,10 @@ Ydata(Nmin+1:end,:,:) = [];
 % remove sites without sufficient data
 Xdata(:,:,isnan(Is)) = [];
 Ydata(:,:,isnan(Is)) = [];
+Budyko(isnan(Is),:)  = [];
+Snames(isnan(Is))    = [];
 
 % check for any stragglers
 assert(all(~isnan(Xdata(:))))
 assert(all(~isnan(Ydata(:))))
+assert(all(~isnan(Budyko(:))))

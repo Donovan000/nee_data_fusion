@@ -11,7 +11,7 @@ exType = 'rs';
 
 % which models to use?
 Mnames = [{'ANN'},{'GPR'},{'TBG'},{'RNN'}];
-Mswitch = [1,1,1,1];
+Mswitch = [1,1,1,0];
 Nmodels = length(Mnames);
 
 % minimum and maximum number of data points per site

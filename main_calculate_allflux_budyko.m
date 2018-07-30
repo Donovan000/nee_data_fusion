@@ -2,7 +2,7 @@
 
 clear all; close all; clc;
 restoredefaultpath; 
-addpath(genpath('../../'))
+addpath(genpath('.'))
 
 %% --- Load All of the FluxNet and AmeriFlux Data -------------------------
 

@@ -6,12 +6,12 @@ restoredefaultpath; addpath(genpath(pwd));
 %% --- Experimnet Setup ---------------------------------------------------
 
 % experiment type
-exType = 'rs';
+% exType = 'rs';
 % exType = 'fn';
 
 % which models to use?
 Mnames = [{'ANN'},{'GPR'},{'TBG'},{'RNN'}];
-Mswitch = [1,1,1,1];
+Mswitch = [1,1,1,0];
 Nmodels = length(Mnames);
 
 % number of validation partitions
