@@ -10,12 +10,6 @@ addpath(genpath(pwd))
 load('allflux_Xdata.mat');
 Xdata(:,1:2,:) = [];
 
-% load network markers
-load('allflux_Network.mat');
-
-% % load the data
-% [Xdata,~,~] = load_regression_data('fn',2*365,1);
-
 % dimensions
 [Nt,Nx,Ns] = size(Xdata);
 
@@ -27,9 +21,7 @@ ef = zeros(Ns,1)./0;
 
 % loop through sites
 for s = 1:Ns
-    if strcmpi(Network{s},'fluxnet')
-        [di(s),ef(s)] = budyko(Xdata(:,:,s));
-    end
+    [di(s),ef(s)] = budyko(Xdata(:,:,s));
 end
 
 %% --- Save Results -------------------------------------------------------
@@ -37,14 +29,21 @@ end
 % output directory
 Odir = './data/in_situ/extracted/';
 
-% file name
-fname = strcat(Odir,'allflux_Budyko.mat');
+% file name 
+fname = strcat(Odir,'allflux_budyko.txt');
 
-% creat output structure
-Budyko = [ef,di];
+% output sctructure
+output = [di(:),ef(:)];
 
-% save 
-save(fname,'Budyko');
+% write to file
+save(fname,'output','-ascii');
+
+% write to file
+% fid = fopen(fname,'w');
+% for s = 1:Ns
+%     fprintf(fid,'%f,%f \n',di(s),ef(s));
+% end
+% fclose(fid);
 
 %% --- Plot Budyko Figure -------------------------------------------------
 
@@ -67,11 +66,12 @@ h2 = plot([1,10],[1,1],'k-','linewidth',3);
 h3 = plot(Xtp,Ytp,'k--','linewidth',3);
 
 % plot site data
-h4 = plot(di,ef,'o','linewidth',3);
+h4 = plot(di(1:209),ef(1:209),'ro','linewidth',3);
+h4 = plot(di(210:end),ef(210:end),'bo','linewidth',3);
 
 % aesthetics
 grid on
-% axis([0,5,0,2.2]);
+axis([0,8,0,4]);
 xlabel('Dryness Index (E_p/P)','fontsize',20);
 ylabel('Evaporative Fraction (E_a/P)','fontsize',20);
 title('Budyko Analysis of Flux Tower Sites','fontsize',22);

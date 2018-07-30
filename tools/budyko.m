@@ -1,7 +1,8 @@
 function [di,ef] = budyko(X)
 
 % grandmas
-cols = 1:8;
+% cols = 1:8;
+cols = [1,7,8];
 I = all(~isnan(X(:,cols)'));
 assert(length(I) == size(X,1));
 I = find(I);
@@ -13,11 +14,11 @@ end
 
 % extract variables
 Pp = X(I,1);            % precipitation                 [mm/d]
-Ta = X(I,2);            % air temperature               [C]
-Pa = X(I,3);            % air pressure                  [kPa]
-Ws = X(I,4);            % wind speed                    [m/s]
-Vp = X(I,5);            % vapor pressure deficit        [hPa]
-Rn = X(I,6);            % net radiation                 [W/m2]
+% Ta = X(I,2);            % air temperature               [C]
+% Pa = X(I,3);            % air pressure                  [kPa]
+% Ws = X(I,4);            % wind speed                    [m/s]
+% Vp = X(I,5);            % vapor pressure deficit        [hPa]
+% Rn = X(I,6);            % net radiation                 [W/m2]
 Qe = X(I,7);            % latent heat                   [W/m2]
 Qh = X(I,8);            % sensible heat                 [W/m2]
 
@@ -53,3 +54,4 @@ di = ep/pp;
 % evaporative fraction
 ea = sum(Ea);
 ef = ea/pp;
+

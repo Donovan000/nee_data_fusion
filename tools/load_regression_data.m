@@ -1,27 +1,27 @@
-function [Xdata,Ydata,Vnames,Snames,Budyko] = ...
+function [Xdata,Ydata,Vnames,IGBP,Budyko] = ...
     load_regression_data(exType,Nmin,isConsecutive)
 
 % load data depending on experiment type
 if strcmpi(exType,'rs')     % remote sensing data
-    load('quarterMonGlobals.mat');        % remote sensing inputs/outputs
-    load('quarterMonGlobalsVnames.mat');  % remote sensing variable names
-    load('allflux_Budyko.mat');           % budyko indexes
-    load('allflux_Snames.mat');           % site names
-    Xdata = quarterMonGlobals(:,2:end,:); % regression inputs
-    Ydata = quarterMonGlobals(:,1,:);     % regression targets
+    load('quarterMonGlobals.mat');          % remote sensing inputs/outputs
+    load('quarterMonGlobalsVnames.mat');    % remote sensing variable names
+    Xdata = quarterMonGlobals(:,2:end,:);   % regression inputs
+    Ydata = quarterMonGlobals(:,1,:);       % regression targets
 %     Vnames(1) = [];                       % remove NEE from variable names
 elseif strcmpi(exType,'fn') % fluxnet data
-    load('allflux_Xdata.mat');            % regression inputs
-    load('allflux_Ydata.mat');            % regression targets
-    load('allflux_Vnames.mat');           % regression variable names
-    load('allflux_Budyko.mat');           % budyko indexes
-    load('allflux_Snames.mat');           % site names
-    Xdata(:,[1,2],:) = [];                % remove dates from inputs
-    Vnames([1,2]) = [];                   % remove dates from variable names
+    load('allflux_Xdata.mat');              % regression inputs
+    load('allflux_Ydata.mat');              % regression targets
+    load('allflux_Vnames.mat');             % regression variable names
+    Xdata(:,[1,2],:) = [];                  % remove dates from inputs
+    Vnames([1,2]) = [];                     % remove dates from variable names
 else
     fprintf('Experiment type (%s) not recognized',exType);
     error('');
 end
+
+% load ancilary data
+Budyko = load('allflux_budyko.txt');        % budyko indexes
+load('allflux_IGBP.txt');                   % veg classifications
 
 % dimensions
 Ns = size(Xdata,3);
@@ -87,7 +87,7 @@ Ydata(Nmin+1:end,:,:) = [];
 Xdata(:,:,isnan(Is)) = [];
 Ydata(:,:,isnan(Is)) = [];
 Budyko(isnan(Is),:)  = [];
-Snames(isnan(Is))    = [];
+IGBP(isnan(Is))    = [];
 
 % check for any stragglers
 assert(all(~isnan(Xdata(:))))

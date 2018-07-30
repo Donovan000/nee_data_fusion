@@ -17,6 +17,10 @@ Xnames = [{'Year'},{'DOY'},{'Precip'},{'Air Temp'},{'Air Pressure'}, ...
     {'Surface SWC'},{'Surface Temp'},{'Vapor Deficit'}];
 Nout = length(Xnames); % number of output dimensions
 
+% hard-coded time period
+Yr = 1991:2018;
+Ny = length(Yr);
+
 %% --- Load Data ----------------------------------------------------------
 
 % list all *.csv files in subdirectories
@@ -24,23 +28,40 @@ filepattern = sprintf('%s/*.csv',Fdir);
 flist = dir(filepattern);
 filepattern = sprintf('%s/*.csv',Adir);
 alist = dir(filepattern);
-fileList = [flist(:);alist(:)];
+% fileList = [flist(:);alist(:)];
+fileList = [alist(:);flist(:)];
 
 % count number of files
-Nfiles = length(fileList);      
+Nf = length(fileList);      
 
-% hard-coded time period
-Yr = 1991:2018;
-Ny = length(Yr);
+% set up network marker
+Network(1:length(alist)) = {'ameriflux'};
+Network(length(alist)+(1:length(flist))) = {'fluxnet'};
+
+% get all site names
+for f = 1:Nf
+    Snames{f} = fileList(f).name(5:10); % Associate site name
+end
 
 % initialize storage: Nout + {'NEE'}
-daily_averages = zeros(Ny*366,Nout+1,Nfiles)/0;
+daily_averages = zeros(Ny*366,Nout+1,Nf)/0;
+duplicates = zeros(Nf,1);
 
 % Read FluxNet data into cells
-for f = 1:Nfiles; tic;
+for f = 1:Nf; tic;
     
     % screen report
-    fprintf('Loading file %d/%d ...',f,Nfiles); tic;
+    fprintf('Loading file %d/%d ...',f,Nf); tic;
+    
+    % check for duplicate sites
+    if strcmpi(Network{f},'ameriflux')
+        i = find(strcmpi(Snames(f),Snames(strcmpi(Network,'fluxnet'))));
+        if ~isempty(i)
+            duplicates(f) = 1;
+            fprintf('. duplicate site; name = %s, time = %f \n',Snames{f},toc);
+            continue
+        end
+    end
     
     % load data from file and store in cell array
     fname = strcat(fileList(f).folder,'/',fileList(f).name);
@@ -63,24 +84,36 @@ for f = 1:Nfiles; tic;
             daily_averages(t,1,f) = Yr(y);
             daily_averages(t,2,f) = d;
             if ~isempty(Id)
-                daily_averages(t,3:end,f) = nanmean(Xdata(Iy(Im(Id)),2:end),1);
+                daily_averages(t,3,f) = nansum(Xdata(Iy(Im(Id)),2)); % precip
+                daily_averages(t,4:end,f) = nanmean(Xdata(Iy(Im(Id)),3:end),1);
             end
         end
     end
       
-    % get site name
-    Snames{f} = fileList(f).name(5:10); % Associate site name
-    
     % get metadata (lat/lon, igpb)
-    [LatLon(:,f),IGBP{f},Network{f}] = read_metadata(Snames{f});
+    [LatLon(:,f),IGBP{f}] = read_metadata(Snames{f},Network{f});
     
     % screen report
     fprintf('. finished; name = %s, time = %f \n',Snames{f},toc);
     
 end
 
+% remove duplicate sites
+daily_averages(:,:,duplicates==1) = [];
+Snames(duplicates==1) = [];
+IGBP(duplicates==1) = [];
+Network(duplicates==1) = [];
+LatLon(:,duplicates==1) = [];
+
+% number of unique sites
+Ns = size(daily_averages,3);
+assert(length(Snames) == Ns);
+assert(length(IGBP) == Ns);
+assert(length(Network) == Ns);
+assert(size(LatLon,2) == Ns);
+
 % screen report
-fprintf('Total # sites = %d \n',Nfiles);
+fprintf('Total # sites = %d \n',Ns);
 
 %% --- Save Results -------------------------------------------------------
     
@@ -88,7 +121,6 @@ fprintf('Total # sites = %d \n',Nfiles);
 Vnames = Xnames;
 Xdata = daily_averages(:,1:end-1,:);
 Ydata = daily_averages(:,end,:);
-Budyko = [di(:),ef(:)];
 
 % screen report
 fprintf('Saving final data matrices ...'); tic
@@ -96,11 +128,15 @@ fprintf('Saving final data matrices ...'); tic
 % save concatenated data structures
 save(strcat(Odir,'allflux_Xdata.mat')  ,'Xdata');
 save(strcat(Odir,'allflux_Ydata.mat')  ,'Ydata');
-save(strcat(Odir,'allflux_Snames.mat') ,'Snames');
 save(strcat(Odir,'allflux_Vnames.mat') ,'Vnames');
-save(strcat(Odir,'allflux_LatLon.mat') ,'LatLon');
-save(strcat(Odir,'allflux_IGBP.mat')   ,'IGBP');
-save(strcat(Odir,'allflux_Network.mat'),'Network');
+
+% write new metadata file
+fid = fopen(strcat(Odir,'allflux_metadata.txt'),'w');
+for s = 1:Ns
+    fprintf(fid,'%s,%f,%f,%s,%s \n',...
+        Snames{s},LatLon(:,s),IGBP{s},Network{s});
+end
+fclose(fid);
 
 % screen report
 fprintf('. finished; time = %f. \n',toc);
