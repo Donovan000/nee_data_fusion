@@ -184,7 +184,7 @@ fprintf(strcat('\n',repmat('-',[1,60]),'\n\n'));
 fprintf('Saving final results ...'); tic;
 
 % save progress
-fname = strcat('./progress/loo_regressions_',...
+fname = strcat('./results/loo_regressions_',...
     exType,'_',num2str(useBudyko),'_',num2str(useIGBP),'.mat');
 save(fname,'-v7.3');
 
@@ -195,7 +195,7 @@ fprintf('. finished; time = %f \n',toc);
 fprintf(strcat('\n',repmat('-',[1,60]),'\n\n'));
 
 % final screen report
-fprintf('\nTotal run time = %f[s]\n\n)',toc(tstart));
+fprintf('\nTotal run time = %f[s]\n\n',toc(tstart));
 
 % screen splitting
 fprintf(strcat('\n',repmat('-',[1,60]),'\n\n'));
