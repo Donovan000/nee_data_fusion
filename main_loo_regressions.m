@@ -14,12 +14,13 @@ Fsave = 1e3;
 
 % which models to use?
 Mnames = [{'ANN'},{'GPR'},{'TBG'},{'RNN'}];
-Mswitch = [1,0,1,0];
+Mswitch = [1,0,0,0];
 Nm = length(Mnames);
 
 % ancilary data flags
-useBudyko = 1;  % 0 = not used; 1 = as regressors 
-useIGBP = 1;    % 0 = not used; 1 = as regressors (from VEGTABLE.PRM); -1 = separate models
+useBudyko   = 1;  % 0 = not used; 1 = as regressors; -1 = separate models (DI >1)
+useIGBP     = 1;  % 0 = not used; 1 = as regressors (PCA of VEGTABLE.PRM); -1 = separate models
+useQflux    = 1;  % use sensible and latent heat as regressors
 
 % minimum and maximum number of data points per site
 if     strcmpi(exType,'rs')
@@ -44,7 +45,7 @@ fprintf('Loading data ...'); tic;
 
 % load the data
 [Xdata,Ydata,Vnames] = ...
-    load_regression_data(exType,Nmin,Mswitch(4),useBudyko,useIGBP);
+    load_regression_data(exType,Nmin,Mswitch(4),useQflux,useBudyko,useIGBP);
 
 % dimensions
 [Nt,Nx,Ns] = size(Xdata);
@@ -66,8 +67,8 @@ Bw = By(2) - By(1);
 tstart = tic;
 
 % init storage
-Zobs = zeros(Nt,Ns)./0;         % observation data
-Zreg = zeros(Nt,Ns,Nm)./0; % regression predictions
+Zobs = zeros(Nt,Ns)./0;     % observation data
+Zreg = zeros(Nt,Ns,Nm)./0;  % regression predictions
 
 % screen splitting
 fprintf(strcat('\n',repmat('-',[1,60]),'\n\n'));
@@ -130,7 +131,6 @@ for s = 1:Ns
     m = m+1; 
     if Mswitch(m)
         fprintf('Site %d/%d - RNN ...',s,Ns); tic;
-        clear XXtrn YYtrn XXtst
         for ss = 1:Ns
             XXtrn{ss} = squeeze(Xdata(:,:,ss))';
             YYtrn{ss} = squeeze(Ydata(:  ,ss))';
@@ -150,8 +150,7 @@ for s = 1:Ns
     % save progress
     if rem(s,Fsave) == 0
         fprintf('Saving progress ...'); tic;
-        fname = strcat('./progress/loo_regs_',num2str(s),...
-            exType,'_',num2str(useBudyko),'_',num2str(useIGBP),'.mat');
+        fname = strcat('./progress/loo_regs_',num2str(s),'.mat');
         save(fname,'-v7.3');
         fprintf('. finished; time = %f \n',toc);
     end
@@ -185,7 +184,11 @@ fprintf('Saving final results ...'); tic;
 
 % save progress
 fname = strcat('./results/loo_regressions_',...
-    exType,'_',num2str(useBudyko),'_',num2str(useIGBP),'.mat');
+    exType,'_',...
+    num2str(useQflux),'_',...
+    num2str(useBudyko),'_',...
+    num2str(useIGBP),...
+    '.mat');
 save(fname,'-v7.3');
 
 % screen report
@@ -207,7 +210,7 @@ statNames = fieldnames(globalStats(Mswitch(1)));
 Nstats = numel(statNames);
 
 % which stats to plot
-Istats = [2:6,7,9,12];
+Istats = [2:6,7,9];
 
 % figure 1: compare different ML methods
 fig = 1; 
@@ -238,16 +241,20 @@ grid on;
 
 % labels
 text(2.5,-0.5,'Distributional Statistics','fontsize',26)
-text(6.0,-0.5,'Pairwise Statistics','fontsize',26)
-% text(6.0,-0.4,'Pairwise','fontsize',26)
-% text(6.0,-0.55,'Statistics','fontsize',26)
+% text(6.0,-0.5,'Pairwise Statistics','fontsize',26)
+text(6.0,-0.4,'Pairwise','fontsize',26)
+text(6.0,-0.55,'Statistics','fontsize',26)
 legend(Mnames(Mswitch == 1),'location','nw');
 set(gca,'xticklabel',statNames(Istats));
 title('Global (LOO) Models','fontsize',22);
 
 % save figure
 fname = strcat('./figures/loo_regressions_global_stats_',...
-    exType,'_',num2str(useBudyko),'_',num2str(useIGBP),'.png');
+    exType,'_',...
+    num2str(useQflux),'_',...
+    num2str(useBudyko),'_',...
+    num2str(useIGBP),...
+    '.png');
 saveas(fig,fname);
 
 %% *** END SCRIPT *********************************************************

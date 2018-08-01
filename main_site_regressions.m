@@ -15,6 +15,9 @@ Fsave = 1e3;
 % number of validation partitions
 kfold = 4;
 
+% ancilary data flags
+useQflux = 1;  % use sensible and latent heat as regressors
+
 % which models to use?
 Mnames = [{'ANN'},{'GPR'},{'TBG'},{'RNN'}];
 Mswitch = [1,0,1,0];
@@ -43,7 +46,7 @@ fprintf('Loading data ...'); tic;
 
 % load the data
 [Xdata,Ydata,Vnames] = ...
-    load_regression_data(exType,Nmin,Mswitch(4),0,0);
+    load_regression_data(exType,Nmin,Mswitch(4),useQflux,0,0);
 
 % dimensions
 [Nt,Nx,Ns] = size(Xdata);
@@ -185,7 +188,7 @@ for s = 1:Ns
     % save progress
     if rem(s,Fsave) == 0
         fprintf('Saving progress ...'); tic;
-        fname = strcat('./progress/site_regs_',num2str(s),exType,'.mat');
+        fname = strcat('./progress/site_regs_',num2str(s),'.mat');
         save(fname,'-v7.3');
         fprintf('. finished; time = %f \n',toc);
     end
@@ -218,7 +221,10 @@ fprintf(strcat('\n',repmat('-',[1,60]),'\n\n'));
 fprintf('Saving final results ...'); tic;
 
 % save progress
-fname = strcat('./results/site_regressions_',exType,'.mat');
+fname = strcat('./results/site_regressions_',...
+    exType,'_',...
+    num2str(useQflux),'_',...
+    '.mat');
 save(fname,'-v7.3');
 
 % screen report
@@ -240,7 +246,7 @@ statNames = fieldnames(globalStats(Mswitch(1)));
 Nstats = numel(statNames);
 
 % which stats to plot
-Istats = [2:6,7,9,12];
+Istats = [2:6,7,9];
 
 % figure 1: compare different ML methods
 fig = 1; 
@@ -271,15 +277,18 @@ grid on;
 
 % labels
 text(2.5,-0.5,'Distributional Statistics','fontsize',26)
-text(6.0,-0.5,'Pairwise Statistics','fontsize',26)
-% text(6.0,-0.4,'Pairwise','fontsize',26)
-% text(6.0,-0.55,'Statistics','fontsize',26)
+% text(6.0,-0.5,'sPairwise Statistics','fontsize',26)
+text(6.0,-0.4,'Pairwise','fontsize',26)
+text(6.0,-0.55,'Statistics','fontsize',26)
 legend(Mnames(Mswitch == 1),'location','nw');
 set(gca,'xticklabel',statNames(Istats));
 title('Site-Specific (K-Fold) Models','fontsize',22);
 
 % save figure
-fname = strcat('./figures/site_regressions_global_stats_',exType,'.png');
+fname = strcat('./figures/site_regressions_global_stats_',...
+    exType,'_',...
+    num2str(useQflux),'_',...
+    '.png');
 saveas(fig,fname);
 
 %% *** END SCRIPT *********************************************************

@@ -1,21 +1,21 @@
-% %% --- Runtime Environment ------------------------------------------------
-% 
-% clear all; close all; clc;
-% restoredefaultpath; addpath(genpath(pwd));
-% 
-% %% --- Experimnet Setup ---------------------------------------------------
-% 
-% % experiment type
-% % exType = 'rs';
-% exType = 'fn';
-% 
-% %% --- Load Data ----------------------------------------------------------
-% 
-% % load site-specific k-fold models
-% fprintf('Loading data ...'); tic;
-% fname = strcat('./results/site_regressions_',exType,'.mat');
-% load(fname);
-% fprintf('. finished; time = %f \n',toc);
+%% --- Runtime Environment ------------------------------------------------
+
+clear all; close all; clc;
+restoredefaultpath; addpath(genpath(pwd));
+
+%% --- Experimnet Setup ---------------------------------------------------
+
+% experiment type
+% exType = 'rs';
+exType = 'fn';
+
+%% --- Load Data ----------------------------------------------------------
+
+% load site-specific k-fold models
+fprintf('Loading data ...'); tic;
+fname = strcat('./results/site_regressions_',exType,'.mat');
+load(fname);
+fprintf('. finished; time = %f \n',toc);
 
 %% --- Site-Specific (k-fold) Sensitivity ---------------------------------
 
@@ -235,34 +235,34 @@ saveas(fig,fname);
 
 %% --- Ancillary Correlations ---------------------------------------------
 
-% Turc-Pike curve
-v = 2;
-tp = (1+di.^-v).^(-1/v);
+% % Turc-Pike curve
+% v = 2;
+% tp = (1+di.^-v).^(-1/v);
 
 % load ancillary data
-[Xaug,~,Vaug,IGBP] = load_regression_data(exType,2*365+2,Mswitch(4),1,1);
-
+[Xaug,~,Vaug,IGBP] = load_regression_data(exType,Nmin,Mswitch(4),useQflux,1,1);
 di = squeeze(Xaug(1,strcmpi(Vaug,'Dryness Index'),:));
-ef = squeeze(Xaug(1,strcmpi(Vaug,'Evaporative Frac'),:));
-difference = ef-tp;
-ratio = ef./di;
 
-igbp1 = squeeze(Xaug(1,end-4,:));
-igbp2 = squeeze(Xaug(1,end-3,:));
-igbp3 = squeeze(Xaug(1,end-2,:));
-igbp4 = squeeze(Xaug(1,end-1,:));
-igbp5 = squeeze(Xaug(1,end-0,:));
+% ef = squeeze(Xaug(1,strcmpi(Vaug,'Evaporative Frac'),:));
+% difference = ef-tp;
+% ratio = ef./di;
+% igbp1 = squeeze(Xaug(1,end-4,:));
+% igbp2 = squeeze(Xaug(1,end-3,:));
+% igbp3 = squeeze(Xaug(1,end-2,:));
+% igbp4 = squeeze(Xaug(1,end-1,:));
+% igbp5 = squeeze(Xaug(1,end-0,:));
 
-% energy-limited vs water-limited sites
-Iw = find(di>1); 
-Ie = find(di<1);
-% Iw = find(igbp1>0.5); 
-% Ie = find(igbp1<0.5);
+% % energy-limited vs water-limited sites
+% Iw = find(di>1); 
+% Ie = find(di<1);
+
+% init storage
+P = zeros(Nx,Nm,2)./0;
 
 % correlations
-clear listf liste listw pvalue
+% clear listf liste listw pvalue
 for m = find(Mswitch)
-    cf = 0; cw = 0; ce = 0;
+%     cf = 0; cw = 0; ce = 0;
     for x = 1:Nx
         
         % regressands and regressors
@@ -300,7 +300,7 @@ for m = find(Mswitch)
 %             liste{m}(ce,3) = {mdl.NumCoefficients};
 %         end
         
-        % anova by IGBP classification
+        % anova by IGBP & budyko classification
         P(x,m,:) = anovan(sensitivity',{IGBP,logical(di<1)},'display','off');
 %         Pigbp(x,m)   = anova1(sensitivity',IGBP,'off');
 %         Pbudy(x,m)   = anova1(sensitivity',logical(di<1),'off');
@@ -341,7 +341,7 @@ set(gcf,'position',[1640         679        1129         819])
 sp = 0;
 for m = find(Mswitch==1)
     
-%     fprintf('\n--- %s ---------------------------------------------- \n\n',Mnames{m})
+%     fprintf('\n--- %s --------------------------------- \n\n',Mnames{m})
 %     for x = 1:Nx
 %         fprintf('%s \t -- %d - %d \n',Vaug{x},P(x,m,:)<alpha);
 %     end
@@ -366,7 +366,8 @@ for m = find(Mswitch==1)
     
     % conditioanl aesthetics
     if m == find(Mswitch==1,1,'last')
-        legend('IGBP Classifications','Dryness Index > 1','Significance: \alpha = 0.05','location','sw');
+        legend('IGBP Classifications','Dryness Index > 1',...
+            'Significance: \alpha = 0.05','location','sw');
         set(gca,'xticklabel',Vaug)
         xtickangle(60);
     end

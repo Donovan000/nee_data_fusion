@@ -1,5 +1,5 @@
-function [Xdata,Ydata,Vnames] = ...
-    load_regression_data(exType,Nmin,isConsecutive,useBudyko,useIGBP)
+function [Xdata,Ydata,Vnames,IGBP] = ...
+    load_regression_data(exType,Nmin,isConsecutive,useQflux,useBudyko,useIGBP)
 
 % load data depending on experiment type
 if strcmpi(exType,'rs')     % remote sensing data
@@ -14,6 +14,13 @@ elseif strcmpi(exType,'fn') % fluxnet data
     load('allflux_Vnames.mat');             % regression variable names
     Xdata(:,[1,2],:) = [];                  % remove dates from inputs
     Vnames([1,2]) = [];                     % remove dates from variable names
+    
+    % remove surface heat fluxes, if requested
+    if ~useQflux
+        Xdata(:,[6,7],:) = [];              % remove Qe,Qh
+        Vnames([6,7]) = [];                 % remove Qe,Qh
+    end
+    
 else
     fprintf('Experiment type (%s) not recognized',exType);
     error('');
@@ -126,7 +133,8 @@ if useIGBP == 1
     assert(all(~isnan(vegParms(:))));
     
     % change varaible names
-    Vnames = [Vnames(:)',{'IGBP PCA-1'},{'IGBP PCA-2'},{'IGBP PCA-3'}];
+    Vnames = [Vnames(:)',{'IGBP PCA-1'},{'IGBP PCA-2'},{'IGBP PCA-3'},...
+        {'IGBP PCA-4'},{'IGBP PCA-5'}];
 
     % add to predictor data vectors
     Xdata = cat(2,Xdata,repmat(permute(vegParms,[3,2,1]),[Nmin,1,1]));
