@@ -16,7 +16,7 @@ Fsave = 1e3;
 kfold = 4;
 
 % ancilary data flags
-useQflux = 1;  % use sensible and latent heat as regressors
+useQflux = 0;  % use sensible and latent heat as regressors
 
 % which models to use?
 Mnames = [{'ANN'},{'GPR'},{'TBG'},{'RNN'}];

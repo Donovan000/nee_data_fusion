@@ -26,6 +26,10 @@ else
     error('');
 end
 
+% load veg classification
+metaTable = readtable('allflux_metadata.txt');    % all metadata
+IGBP = metaTable{:,4};                            % igbp classificaiton
+
 % dimensions
 Ns = size(Xdata,3);
 
@@ -89,6 +93,7 @@ Ydata(Nmin+1:end,:,:) = [];
 % remove sites without sufficient data
 Xdata(:,:,isnan(Is)) = [];
 Ydata(:,:,isnan(Is)) = [];
+IGBP(isnan(Is)) = [];
 
 % check for any stragglers
 assert(all(~isnan(Xdata(:))))
@@ -110,11 +115,6 @@ if useBudyko == 1
 end
 
 if useIGBP == 1
-    
-    % load veg classification
-    metaTable = readtable('allflux_metadata.txt');    % all metadata
-    IGBP = metaTable{:,4};                            % igbp classificaiton
-    IGBP(isnan(Is)) = [];
     
     % load the vegtype names
     parmTable = readtable('vegparm.csv');

@@ -9,11 +9,17 @@ restoredefaultpath; addpath(genpath(pwd));
 % exType = 'rs';
 exType = 'fn';
 
+% ancilary data flags
+useQflux = 0;  % use sensible and latent heat as regressors
+
 %% --- Load Data ----------------------------------------------------------
 
 % load site-specific k-fold models
 fprintf('Loading data ...'); tic;
-fname = strcat('./results/site_regressions_',exType,'.mat');
+fname = strcat('./results/site_regressions_',...
+    exType,'_',...
+    num2str(useQflux),'_',...
+    '.mat');
 load(fname);
 fprintf('. finished; time = %f \n',toc);
 

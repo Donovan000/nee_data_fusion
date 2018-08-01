@@ -1,6 +1,4 @@
-%% --- Runtime Environment ------------------------------------------------
-
-clear all; close all; clc;
+function loo_regressions(useQflux,useIGBP,useBudyko,catIGBP)
 restoredefaultpath; addpath(genpath(pwd));
 
 %% --- Experimnet Setup ---------------------------------------------------
@@ -17,12 +15,12 @@ Mnames = [{'ANN'},{'GPR'},{'TBG'},{'RNN'}];
 Mswitch = [1,0,0,0];
 Nm = length(Mnames);
 
-% ancilary data flags
-useBudyko   = 1;  % 0 = not used; 1 = as regressors; -1 = separate models (DI >1)
-useIGBP     = 0;  % 0 = not used; 1 = as regressors (PCA of VEGTABLE.PRM)
-useQflux    = 1;  % use sensible and latent heat as regressors
-catIGBP     = 1;  % 0 = not used; -1 = separate models
-% catBudyko   = 0;  % 0 = not used; -1 = separate models (DI >1)
+% % ancilary data flags
+% useBudyko   = 1;  % 0 = not used; 1 = as regressors; -1 = separate models (DI >1)
+% useIGBP     = 0;  % 0 = not used; 1 = as regressors (PCA of VEGTABLE.PRM)
+% useQflux    = 1;  % use sensible and latent heat as regressors
+% catIGBP     = 1;  % 0 = not used; -1 = separate models
+% % catBudyko   = 0;  % 0 = not used; -1 = separate models (DI >1)
 
 % minimum and maximum number of data points per site
 if     strcmpi(exType,'rs')
@@ -267,59 +265,6 @@ fname = strcat('./figures/loo_regressions_global_stats_',...
     '.png');
 saveas(fig,fname);
 
-%% *** END SCRIPT *********************************************************
+%% *** END FUNCTION *******************************************************
 
 return
-
-% %% --- Plot Local Stats ---------------------------------------------------
-% 
-% % get number of statistics
-% statNames = fieldnames(globalStats.ann);
-% Nstats = numel(statNames);
-% 
-% % which stats to plot
-% % Istats = [4,5,9,10,13];
-% Istats = [2:6,7,9];
-% 
-% % figure 1: compare different ML methods
-% fig = 2; figure(fig); close(fig); figure(fig);
-% set(gcf,'color','w');
-% set(gcf,'position',[484   379   1100   450*sum(Mswitch)])
-% 
-% % create plot vectors
-% globalPlotData = zeros(Nstats,Ns,Nm);
-% for s = 1:Nstats
-%     for ss = 1:Ns
-%         globalPlotData(s,ss,1) = stats(ss).ann.(statNames{s});
-%         globalPlotData(s,ss,2) = stats(ss).gpr.(statNames{s});
-%         globalPlotData(s,ss,3) = stats(ss).tbg.(statNames{s});
-%         globalPlotData(s,ss,4) = stats(ss).rnn.(statNames{s});
-%     end % s-loop
-% end % ss-loop
-% globalPlotData(:,:,Mswitch==0) = [];
-% 
-% % plot global stats from local models
-% for m = 1:size(globalPlotData,3)
-%     subplot(size(globalPlotData,3),1,m)
-%     violin(squeeze(globalPlotData(Istats,:,m))'); hold on;
-%     
-%     % aesthetics
-%     plot([0,100],[0,0],'k-','linewidth',1);
-%     set(gca,'ylim',[-0.8,1]);
-%     set(gca,'xlim',[0.5,length(Istats)+0.5]);
-%     ylim = get(gca,'ylim');
-%     plot([5.5,5.5],ylim,'k-','linewidth',4);
-%     set(gca,'fontsize',18)
-%     grid on;
-%     
-%     % labels
-%     text(2.7,-0.5,'Distributional Statistics','fontsize',26)
-%     text(6.0,-0.4,'Pairwise','fontsize',26)
-%     text(6.0,-0.55,'Statistics','fontsize',26)
-%     set(gca,'xticklabel',statNames(Istats));
-%     title(strcat({'Global (LOO) '},Unames(m)),'fontsize',22);  
-% end % m-loop
-% 
-% % save figure
-% fname = strcat('./figures/loo_regressions_violin_',exType,'.png');
-% saveas(fig,fname);
