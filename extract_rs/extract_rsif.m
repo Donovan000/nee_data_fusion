@@ -1,5 +1,5 @@
 clear all; close all; clc;
-%% ~~~ Load and format RSIF for training at 425 sites ~~~
+%% ~~~ Load and format RSIF for training at 340 sites ~~~
 
 fprintf('Loading RSIF data...\n'); tic;
 load('../data/remote_sensing/RSIF_2007_2016_05N_01L.mat', 'RSIF');
